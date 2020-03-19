@@ -143,7 +143,8 @@ int Manager::processImage(const std::string& tarFilePath)
             log<level::ERR>("BMC upgrade: Machine name doesn't match",
                             entry("CURR_MACHINE=%s", currMachine.c_str()),
                             entry("NEW_MACHINE=%s", machineStr.c_str()));
-            return -1;
+            // TODO Uncomment once PNOR-only updates are no longer supported
+            // return -1;
         }
     }
     else
