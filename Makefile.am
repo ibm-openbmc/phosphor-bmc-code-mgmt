@@ -65,8 +65,12 @@ endif
 
 if UBIFS_LAYOUT
 include ubi/Makefile.am.include
-else
+endif
+if STATIC_LAYOUT
 include static/Makefile.am.include
+endif
+if MMC
+include mmc/Makefile.am.include
 endif
 
 if WANT_SIGNATURE_VERIFY_BUILD
