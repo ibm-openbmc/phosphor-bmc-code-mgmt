@@ -184,6 +184,15 @@ AS_IF([test "x$enable_ubifs_layout" == "xyes"], \
     [AC_DEFINE([UBIFS_LAYOUT],[],[Enable ubifs support.])])
 AM_CONDITIONAL([UBIFS_LAYOUT], [test "x$enable_ubifs_layout" == "xyes"])
 
+# setup MMC support
+AC_ARG_ENABLE([mmc],
+    AS_HELP_STRING([--enable-mmc], [Enable MMC support.]))
+AS_IF([test "x$enable_mmc" == "xyes"], \
+    [AC_DEFINE([MMC],[],[Enable MMC support.])])
+AM_CONDITIONAL([MMC], [test "x$enable_mmc" == "xyes"])
+
+AM_CONDITIONAL([STATIC_LAYOUT], [test "x$enable_ubifs_layout" != "xyes" -a "x$enable_mmc" != "xyes"])
+
 # setup host bios upgrade support
 AC_ARG_ENABLE([host_bios_upgrade],
     AS_HELP_STRING([--enable-host_bios_upgrade], [Enable host bios upgrade support.]))

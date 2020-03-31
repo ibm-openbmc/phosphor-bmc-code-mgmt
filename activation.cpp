@@ -215,6 +215,10 @@ auto Activation::activation(Activations value) -> Activations
 
         flashWrite();
 
+#ifdef MMC
+        return softwareServer::Activation::activation(value);
+#endif
+
         storePurpose(versionId,
                      parent.versions.find(versionId)->second->purpose());
         if (!redundancyPriority)

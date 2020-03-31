@@ -446,6 +446,54 @@ mirroruboot() {
   fi
 }
 
+mmc() {
+  # Copy the kernel and device tree to where u-boot will read them
+  cp /tmp/images/${version}/image-kernel /boot/zImage
+  cp /tmp/images/${version}/image-dtb /boot/aspeed-bmc.dtb
+
+  # Populate rootfs
+  # Image can be put in side a (mmcblk0p2) or side b (mmcblk0p3), find the
+  # running one to determine the alternate one.
+  target=""
+  rootmatch=" on / "
+  m="$(mount | grep "${rootmatch}")"
+  if [[ "${m}" == *"mmcblk0p2"* ]]; then
+    target="/dev/mmcblk0p3"
+  else
+    target="/dev/mmcblk0p2"
+  fi
+  xz -d -c /tmp/images/${version}/image-rofs | dd of="${target}"
+
+  # Mount the updated side to copy the content of /etc
+  mkdir -p /alt
+  mount -t ext4 ${target} /alt
+
+  # Copy the following from /etc based on the whitelist that the static layout
+  # uses to preserve files across code upate
+  # (meta-phosphor/recipes-phosphor/initrdscripts/files/whitelist)
+  whitelist="/etc/dropbear/dropbear_rsa_host_key \
+  /etc/group \
+  /etc/gshadow \
+  /etc/machine-id \
+  /etc/passwd \
+  /etc/resolv.conf \
+  /etc/shadow \
+  /etc/systemd/network"
+
+  for i in ${whitelist}; do
+    # Create subdirectories
+    mkdir -p "/alt${i%/*}"
+    # Copy files
+    cp -rp "${i}" "/alt${i%/*}/"
+  done
+
+  # Unmount in case the bmc is not rebooted and another update is done
+  umount /alt
+
+  # Set root variable to the updated side
+  fw_setenv root "${target}"
+}
+
 case "$1" in
   mtduboot)
     reqmtd="$2"
@@ -508,6 +556,10 @@ case "$1" in
     ;;
   mirroruboot)
     mirroruboot
+    ;;
+  mmc)
+    version="$2"
+    mmc
     ;;
   *)
     echo "Invalid argument"
