@@ -472,6 +472,7 @@ mmc() {
   # uses to preserve files across code upate
   # (meta-phosphor/recipes-phosphor/initrdscripts/files/whitelist)
   whitelist="/etc/dropbear/dropbear_rsa_host_key \
+  /etc/fstab \
   /etc/group \
   /etc/gshadow \
   /etc/machine-id \
