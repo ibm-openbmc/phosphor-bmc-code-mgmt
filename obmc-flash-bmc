@@ -487,11 +487,13 @@ mmc() {
   /etc/fstab \
   /etc/group \
   /etc/gshadow \
+  /etc/hostname \
   /etc/machine-id \
   /etc/passwd \
   /etc/resolv.conf \
   /etc/shadow \
-  /etc/systemd/network"
+  /etc/systemd/network \
+  /home/root/.ssh/authorized_keys"
 
   for i in ${whitelist}; do
     # Create subdirectories
