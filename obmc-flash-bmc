@@ -468,6 +468,18 @@ mmc() {
   mkdir -p /alt
   mount -t ext4 ${target} /alt
 
+  # Populate the host-fw directory if image file is present
+  hostfw_image="/tmp/images/${version}/image-hostfw"
+  if [ -e "${hostfw_image}" ]; then
+    mkdir -p /tmp/hostfw
+    mount "${hostfw_image}" /tmp/hostfw/
+    rm /alt/usr/share/host-fw/*
+    # Copy everything and preserve symlinks if any. The BOOTKERNEL may be a
+    # symlink to either BOOTKERNEL.phyp or BOOTKERNEL.opal.
+    cp -a /tmp/hostfw/* /alt/usr/share/host-fw/
+    umount /tmp/hostfw 
+  fi
+
   # Copy the following from /etc based on the whitelist that the static layout
   # uses to preserve files across code upate
   # (meta-phosphor/recipes-phosphor/initrdscripts/files/whitelist)
@@ -475,11 +487,13 @@ mmc() {
   /etc/fstab \
   /etc/group \
   /etc/gshadow \
+  /etc/hostname \
   /etc/machine-id \
   /etc/passwd \
   /etc/resolv.conf \
   /etc/shadow \
-  /etc/systemd/network"
+  /etc/systemd/network \
+  /home/root/.ssh/authorized_keys"
 
   for i in ${whitelist}; do
     # Create subdirectories
