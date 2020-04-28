@@ -492,8 +492,7 @@ mmc() {
   /etc/passwd \
   /etc/resolv.conf \
   /etc/shadow \
-  /etc/systemd/network \
-  /home/root/.ssh/authorized_keys"
+  /etc/systemd/network"
 
   for i in ${whitelist}; do
     # Create subdirectories
