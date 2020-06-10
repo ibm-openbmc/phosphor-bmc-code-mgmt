@@ -15,6 +15,7 @@
 #include <queue>
 #include <set>
 #include <string>
+#include <thread>
 #include <xyz/openbmc_project/Common/error.hpp>
 #include <xyz/openbmc_project/Software/Image/error.hpp>
 
@@ -41,12 +42,11 @@ void ItemUpdater::createActivation(sdbusplus::message::message& msg)
     using SVersion = server::Version;
     using VersionPurpose = SVersion::VersionPurpose;
     using VersionClass = phosphor::software::manager::Version;
-    namespace mesg = sdbusplus::message;
 
-    mesg::object_path objPath;
+    sdbusplus::message::object_path objPath;
     auto purpose = VersionPurpose::Unknown;
     std::string version;
-    std::map<std::string, std::map<std::string, mesg::variant<std::string>>>
+    std::map<std::string, std::map<std::string, std::variant<std::string>>>
         interfaces;
     msg.read(objPath, interfaces);
     std::string path(std::move(objPath));
@@ -453,7 +453,12 @@ void ItemUpdater::freePriority(uint8_t value, const std::string& versionId)
 
 void ItemUpdater::reset()
 {
+    constexpr auto setFactoryResetWait = std::chrono::seconds(3);
     helper.factoryReset();
+
+    // Need to wait for env variables to complete, otherwise an immediate reboot
+    // will not factory reset.
+    std::this_thread::sleep_for(setFactoryResetWait);
 
     log<level::INFO>("BMC factory reset will take effect upon reboot.");
 }
