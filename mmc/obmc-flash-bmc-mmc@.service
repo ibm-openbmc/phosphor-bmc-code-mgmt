@@ -5,3 +5,4 @@ Description=Store read-only images %I to BMC storage
 Type=oneshot
 RemainAfterExit=no
 ExecStart=/usr/bin/obmc-flash-bmc mmc %i
+ExecStart=/usr/bin/obmc-flash-bmc mtduboot u-boot %i
