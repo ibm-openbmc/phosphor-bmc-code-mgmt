@@ -19,6 +19,10 @@
 #include "image_verify.hpp"
 #endif
 
+#ifdef WANT_ACCESS_KEY_VERIFY
+#include "uak_verify.hpp"
+#endif
+
 extern boost::asio::io_context& getIOContext();
 
 namespace phosphor
@@ -91,6 +95,25 @@ auto Activation::activation(Activations value) -> Activations
 
     if (value == softwareServer::Activation::Activations::Activating)
     {
+#ifdef WANT_ACCESS_KEY_VERIFY
+        fs::path manifestPath(IMG_UPLOAD_DIR);
+        manifestPath /= (versionId + '/' + MANIFEST_FILE_NAME);
+
+        using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
+        UpdateAccessKey updateAccessKey(manifestPath);
+
+        if (!updateAccessKey.verify())
+        {
+            error("Update Access Key validation failed.");
+            report<InternalFailure>();
+            if (parent.control::FieldMode::fieldModeEnabled())
+            {
+                return softwareServer::Activation::activation(
+                    softwareServer::Activation::Activations::Failed);
+            }
+        }
+#endif
+
 #ifdef WANT_SIGNATURE_VERIFY
         fs::path uploadDir(IMG_UPLOAD_DIR);
         if (!verifySignature(uploadDir / versionId, SIGNED_IMAGE_CONF_PATH))

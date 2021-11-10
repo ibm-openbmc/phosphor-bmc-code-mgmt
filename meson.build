@@ -71,6 +71,7 @@ conf.set('WANT_SIGNATURE_VERIFY', \
     get_option('verify-signature').enabled() or \
     get_option('verify-full-signature').enabled())
 conf.set('WANT_SIGNATURE_FULL_VERIFY', get_option('verify-full-signature').enabled())
+conf.set('WANT_ACCESS_KEY_VERIFY', get_option('verify-update-access-key').enabled())
 
 # Configurable variables
 conf.set('ACTIVE_BMC_MAX_ALLOWED', get_option('active-bmc-max-allowed'))
@@ -247,6 +248,12 @@ if (get_option('verify-signature').enabled() or \
         'utils.cpp',
         'image_verify.cpp',
         'openssl_alloc.cpp'
+    )
+endif
+
+if (get_option('verify-update-access-key').enabled())
+    image_updater_sources += files(
+        'uak_verify.cpp'
     )
 endif
 
