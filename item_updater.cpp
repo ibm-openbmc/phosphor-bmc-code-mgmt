@@ -602,13 +602,30 @@ bool ItemUpdater::fieldModeEnabled(bool value)
 
 void ItemUpdater::restoreFieldModeStatus()
 {
-    std::ifstream input("/dev/mtd/u-boot-env");
-    std::string envVar;
-    std::getline(input, envVar);
-
-    if (envVar.find("fieldmode=true") != std::string::npos)
+    FILE* pipe = popen("fw_printenv -n fieldmode 2>&1", "r");
+    if (!pipe)
     {
-        ItemUpdater::fieldModeEnabled(true);
+        error("Error popen failed");
+        return;
+    }
+    std::array<char, 512> buffer;
+    std::stringstream result;
+    while (fgets(buffer.data(), buffer.size(), pipe) != nullptr)
+    {
+        result << buffer.data();
+    }
+    int stat = pclose(pipe);
+    if (WIFEXITED(stat))
+    {
+        int rc = WEXITSTATUS(stat);
+        if (rc == 0)
+        {
+            if (0 == strcmp(result.str().c_str(), "true\n"))
+            {
+                ItemUpdater::fieldModeEnabled(true);
+                return;
+            }
+        }
     }
 }
 
