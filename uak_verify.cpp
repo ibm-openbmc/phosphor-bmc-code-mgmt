@@ -2,6 +2,8 @@
 
 #include "uak_verify.hpp"
 
+#include "utils.hpp"
+
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/server.hpp>
@@ -11,6 +13,8 @@
 #include <string>
 #include <variant>
 #include <vector>
+
+namespace fs = std::filesystem;
 
 namespace phosphor
 {
@@ -49,6 +53,33 @@ std::string UpdateAccessKey::getUpdateAccessExpirationDate()
               "ERROR", e);
     }
     return date;
+}
+
+void UpdateAccessKey::writeUpdateAccessExpirationDate(const std::string& date)
+{
+    auto bus = sdbusplus::bus::new_default();
+    constexpr auto uakObjPath = "/com/ibm/VPD/Manager";
+    constexpr auto uakInterface = "com.ibm.VPD.Manager";
+    constexpr auto fruPath =
+        "/xyz/openbmc_project/inventory/system/chassis/motherboard";
+    constexpr auto fruRecord = "UTIL";
+    constexpr auto fruKeyword = "D8";
+    std::vector<uint8_t> uakData(date.begin(), date.end());
+
+    try
+    {
+        auto service = utils::getService(bus, uakObjPath, uakInterface);
+        auto method = bus.new_method_call(service.c_str(), uakObjPath,
+                                          uakInterface, "WriteKeyword");
+        method.append(static_cast<sdbusplus::message::object_path>(fruPath),
+                      fruRecord, fruKeyword, uakData);
+        bus.call_noreply(method);
+    }
+    catch (const sdbusplus::exception::exception& e)
+    {
+        error("Error setting VPD keyword to {EXP_DATE}: {ERROR}", "EXP_DATE",
+              date, "ERROR", e);
+    }
 }
 
 std::string UpdateAccessKey::getBuildID()
@@ -119,6 +150,54 @@ bool UpdateAccessKey::verify()
     }
     return false;
 }
+
+void UpdateAccessKey::sync()
+{
+    constexpr auto uakDateFile = "uak-data";
+    auto flashDateFilePath = fs::path(PERSIST_DIR) / uakDateFile;
+    auto backplaneDate = getUpdateAccessExpirationDate();
+
+    std::string flashDate{};
+    if (fs::exists(flashDateFilePath))
+    {
+        std::ifstream inputFile(flashDateFilePath.string(), std::ios::in);
+        if (inputFile)
+        {
+            inputFile >> flashDate;
+            inputFile.close();
+        }
+    }
+
+    auto isUninitialized = [](std::string uakStr) {
+        return (uakStr.empty() || (uakStr.front() == '\0') ||
+                isspace(uakStr.front()) || (uakStr.front() == '0'));
+    };
+
+    if (!isUninitialized(backplaneDate))
+    {
+        if (backplaneDate.compare(flashDate) != 0)
+        {
+            // Write backplane date to flash memory
+            if (!fs::is_directory(flashDateFilePath.parent_path()))
+            {
+                fs::create_directories(flashDateFilePath.parent_path());
+            }
+            std::ofstream outputFile(flashDateFilePath.string(),
+                                     std::ios::out | std::ios::trunc);
+            if (outputFile)
+            {
+                outputFile << backplaneDate;
+                outputFile.close();
+            }
+        }
+    }
+    else if (!isUninitialized(flashDate))
+    {
+        // Write flash date to backplane date
+        writeUpdateAccessExpirationDate(flashDate);
+    }
+}
+
 } // namespace image
 } // namespace software
 } // namespace phosphor

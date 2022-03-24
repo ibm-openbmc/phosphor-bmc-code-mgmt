@@ -33,12 +33,20 @@ class UpdateAccessKey
      */
     bool verify();
 
+    /** @brief Syncs the update access key found in VPD and flash memory */
+    void sync();
+
   private:
     /** @brief Reads the D8 property from the inventory manager to retirieve the
      *         key information necessary for the update access key
      *  @return [out] - value of the property
      */
     std::string getUpdateAccessExpirationDate();
+
+    /** @brief Uses the VPD manager to write to the update access key property
+     *  @param[in] key - uak date to write
+     */
+    void writeUpdateAccessExpirationDate(const std::string& date);
 
     /** @brief Get the BMC build_id string from the manifest file
      *  @return The build_id.
