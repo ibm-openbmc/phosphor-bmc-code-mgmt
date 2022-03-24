@@ -17,6 +17,10 @@
 #include <string>
 #include <vector>
 
+#ifdef WANT_ACCESS_KEY_VERIFY
+#include "uak_verify.hpp"
+#endif
+
 namespace phosphor
 {
 namespace software
@@ -103,6 +107,11 @@ class ItemUpdater : public ItemUpdaterInherit
                 std::bind(std::mem_fn(&ItemUpdater::createActivation), this,
                           std::placeholders::_1));
         }
+#ifdef WANT_ACCESS_KEY_VERIFY
+        using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
+        UpdateAccessKey updateAccessKey("");
+        updateAccessKey.sync();
+#endif
         getRunningSlot();
         setBMCInventoryPath();
         if (type == UpdaterType::BMC || type == UpdaterType::ALL)
