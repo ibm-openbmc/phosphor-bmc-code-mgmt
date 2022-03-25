@@ -43,6 +43,10 @@ using InternalFailure =
 namespace control = sdbusplus::xyz::openbmc_project::Control::server;
 #endif
 
+#ifdef WANT_ACCESS_KEY_VERIFY
+namespace control = sdbusplus::xyz::openbmc_project::Control::server;
+#endif
+
 void Activation::subscribeToSystemdSignals()
 {
     auto method = this->bus.new_method_call(SYSTEMD_BUSNAME, SYSTEMD_PATH,
@@ -106,8 +110,6 @@ auto Activation::activation(Activations value) -> Activations
 
         if (!updateAccessKey.verify())
         {
-            error("Update Access Key validation failed.");
-            report<InternalFailure>();
             if (parent.control::FieldMode::fieldModeEnabled())
             {
                 return softwareServer::Activation::activation(
