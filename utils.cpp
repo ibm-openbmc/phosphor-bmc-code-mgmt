@@ -58,6 +58,18 @@ void setProperty(sdbusplus::bus_t& bus, const std::string& objectPath,
     bus.call_noreply(method);
 }
 
+SubTreeResponse getSubTree(sdbusplus::bus::bus& bus,
+                           const std::string& interface)
+{
+    auto method = bus.new_method_call(MAPPER_BUSNAME, MAPPER_PATH,
+                                      MAPPER_INTERFACE, "GetSubTree");
+    method.append("/", 0, std::vector<std::string>({interface}));
+    auto reply = bus.call(method);
+    SubTreeResponse response;
+    reply.read(response);
+    return response;
+}
+
 void mergeFiles(const std::vector<std::string>& srcFiles,
                 const std::string& dstFile)
 {
