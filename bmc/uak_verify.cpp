@@ -24,13 +24,13 @@ namespace image
 {
 PHOSPHOR_LOG2_USING;
 
-std::string UpdateAccessKey::getUpdateAccessExpirationDate()
+std::string UpdateAccessKey::getUpdateAccessExpirationDate(
+    const std::string& objectPath)
 {
     std::string date{};
     auto bus = sdbusplus::bus::new_default();
     auto method = bus.new_method_call("xyz.openbmc_project.Inventory.Manager",
-                                      "/xyz/openbmc_project/inventory/system/"
-                                      "chassis/motherboard",
+                                      objectPath.c_str(),
                                       "org.freedesktop.DBus.Properties", "Get");
     method.append("com.ibm.ipzvpd.UTIL");
     method.append("D8");
@@ -55,13 +55,12 @@ std::string UpdateAccessKey::getUpdateAccessExpirationDate()
     return date;
 }
 
-void UpdateAccessKey::writeUpdateAccessExpirationDate(const std::string& date)
+void UpdateAccessKey::writeUpdateAccessExpirationDate(
+    const std::string& date, const std::string& objectPath)
 {
     auto bus = sdbusplus::bus::new_default();
     constexpr auto uakObjPath = "/com/ibm/VPD/Manager";
     constexpr auto uakInterface = "com.ibm.VPD.Manager";
-    constexpr auto fruPath =
-        "/xyz/openbmc_project/inventory/system/chassis/motherboard";
     constexpr auto fruRecord = "UTIL";
     constexpr auto fruKeyword = "D8";
     std::vector<uint8_t> uakData(date.begin(), date.end());
@@ -71,14 +70,14 @@ void UpdateAccessKey::writeUpdateAccessExpirationDate(const std::string& date)
         auto service = utils::getService(bus, uakObjPath, uakInterface);
         auto method = bus.new_method_call(service.c_str(), uakObjPath,
                                           uakInterface, "WriteKeyword");
-        method.append(static_cast<sdbusplus::message::object_path>(fruPath),
+        method.append(static_cast<sdbusplus::message::object_path>(objectPath),
                       fruRecord, fruKeyword, uakData);
         bus.call_noreply(method);
     }
     catch (const sdbusplus::exception::exception& e)
     {
-        error("Error setting VPD keyword to {EXP_DATE}: {ERROR}", "EXP_DATE",
-              date, "ERROR", e);
+        error("Error setting {PATH} VPD keyword to {EXP_DATE}: {ERROR}", "PATH",
+              objectPath, "EXP_DATE", date, "ERROR", e);
     }
 }
 
@@ -114,10 +113,12 @@ std::string UpdateAccessKey::getBuildID()
 
 bool UpdateAccessKey::verify()
 {
+    constexpr auto motherboardObjectPath =
+        "/xyz/openbmc_project/inventory/system/chassis/motherboard";
     std::string expirationDate{};
     std::string buildID{};
     buildID = getBuildID();
-    expirationDate = getUpdateAccessExpirationDate();
+    expirationDate = getUpdateAccessExpirationDate(motherboardObjectPath);
 
     // Ensure that BUILD_ID date is in the YYYYMMDD format but truncating the
     // string to a length of 8 characters--excluding build's time information.
@@ -153,10 +154,40 @@ bool UpdateAccessKey::verify()
 
 void UpdateAccessKey::sync()
 {
+    constexpr auto vpdInterface = "com.ibm.ipzvpd.UTIL";
+    std::string backplaneDate{};
+    std::string motherboardObjectPath{};
+
+    auto bus = sdbusplus::bus::new_default();
+    try
+    {
+        auto subTreeResponse = utils::getSubTree(bus, vpdInterface);
+        for (const auto& [path, object] : subTreeResponse)
+        {
+            for (const auto& [service, interfaces] : object)
+            {
+                for (const auto& interface : interfaces)
+                {
+                    if (interface ==
+                        "xyz.openbmc_project.Inventory.Item.Board.Motherboard")
+                    {
+                        motherboardObjectPath = path;
+                        backplaneDate = getUpdateAccessExpirationDate(
+                            motherboardObjectPath);
+                    }
+                }
+            }
+        }
+    }
+    catch (const sdbusplus::exception::exception& e)
+    {
+        error("Error in GetSubTree for interface {INTERFACE}: {ERROR}",
+              "INTERFACE", vpdInterface, "ERROR", e);
+        return;
+    }
+
     constexpr auto uakDateFile = "uak-data";
     auto flashDateFilePath = fs::path(PERSIST_DIR) / uakDateFile;
-    auto backplaneDate = getUpdateAccessExpirationDate();
-
     std::string flashDate{};
     if (fs::exists(flashDateFilePath))
     {
@@ -194,7 +225,10 @@ void UpdateAccessKey::sync()
     else if (!isUninitialized(flashDate))
     {
         // Write flash date to backplane date
-        writeUpdateAccessExpirationDate(flashDate);
+        if (!motherboardObjectPath.empty())
+        {
+            writeUpdateAccessExpirationDate(flashDate, motherboardObjectPath);
+        }
     }
 }
 
