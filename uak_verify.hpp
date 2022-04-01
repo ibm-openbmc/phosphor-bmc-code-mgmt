@@ -39,14 +39,17 @@ class UpdateAccessKey
   private:
     /** @brief Reads the D8 property from the inventory manager to retirieve the
      *         key information necessary for the update access key
+     *  @param[in] objectPath - D-Bus object path
      *  @return [out] - value of the property
      */
-    std::string getUpdateAccessExpirationDate();
+    std::string getUpdateAccessExpirationDate(const std::string& objectPath);
 
     /** @brief Uses the VPD manager to write to the update access key property
      *  @param[in] key - uak date to write
+     *  @param[in] objectPath - D-Bus object path
      */
-    void writeUpdateAccessExpirationDate(const std::string& date);
+    void writeUpdateAccessExpirationDate(const std::string& date,
+                                         const std::string& objectPath);
 
     /** @brief Get the BMC build_id string from the manifest file
      *  @return The build_id.
