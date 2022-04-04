@@ -102,6 +102,8 @@ auto Activation::activation(Activations value) -> Activations
         using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
         UpdateAccessKey updateAccessKey(manifestPath);
 
+        updateAccessKey.sync();
+
         if (!updateAccessKey.verify())
         {
             error("Update Access Key validation failed.");
