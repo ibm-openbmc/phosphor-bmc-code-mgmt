@@ -156,7 +156,9 @@ void UpdateAccessKey::sync()
 {
     constexpr auto vpdInterface = "com.ibm.ipzvpd.UTIL";
     std::string backplaneDate{};
+    std::string panelDate{};
     std::string motherboardObjectPath{};
+    std::string panelObjectPath{};
 
     auto bus = sdbusplus::bus::new_default();
     try
@@ -174,6 +176,13 @@ void UpdateAccessKey::sync()
                         motherboardObjectPath = path;
                         backplaneDate = getUpdateAccessExpirationDate(
                             motherboardObjectPath);
+                    }
+                    else if (interface ==
+                             "xyz.openbmc_project.Inventory.Item.Panel")
+                    {
+                        panelObjectPath = path;
+                        panelDate =
+                            getUpdateAccessExpirationDate(panelObjectPath);
                     }
                 }
             }
@@ -208,7 +217,7 @@ void UpdateAccessKey::sync()
     {
         if (backplaneDate.compare(flashDate) != 0)
         {
-            // Write backplane date to flash memory
+            // Write backplane date to flash memory and panel date
             if (!fs::is_directory(flashDateFilePath.parent_path()))
             {
                 fs::create_directories(flashDateFilePath.parent_path());
@@ -221,13 +230,40 @@ void UpdateAccessKey::sync()
                 outputFile.close();
             }
         }
+        if ((backplaneDate.compare(panelDate) != 0) && !panelObjectPath.empty())
+        {
+            writeUpdateAccessExpirationDate(backplaneDate, panelObjectPath);
+        }
     }
     else if (!isUninitialized(flashDate))
     {
-        // Write flash date to backplane date
+        // Write flash date to backplane date and panel date
         if (!motherboardObjectPath.empty())
         {
             writeUpdateAccessExpirationDate(flashDate, motherboardObjectPath);
+        }
+        if ((flashDate.compare(panelDate) != 0) && !panelObjectPath.empty())
+        {
+            writeUpdateAccessExpirationDate(flashDate, panelObjectPath);
+        }
+    }
+    else if (!isUninitialized(panelDate))
+    {
+        // Write panel date to backplane date and flash memory
+        if (!motherboardObjectPath.empty())
+        {
+            writeUpdateAccessExpirationDate(panelDate, motherboardObjectPath);
+        }
+        if (!fs::is_directory(flashDateFilePath.parent_path()))
+        {
+            fs::create_directories(flashDateFilePath.parent_path());
+        }
+        std::ofstream outputFile(flashDateFilePath.string(),
+                                 std::ios::out | std::ios::trunc);
+        if (outputFile)
+        {
+            outputFile << panelDate;
+            outputFile.close();
         }
     }
 }
