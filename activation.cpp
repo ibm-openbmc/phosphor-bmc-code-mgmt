@@ -97,6 +97,7 @@ auto Activation::activation(Activations value) -> Activations
             using InvalidSignatureErr = sdbusplus::xyz::openbmc_project::
                 Software::Version::Error::InvalidSignature;
             report<InvalidSignatureErr>();
+            utils::createBmcDump(bus);
             // Stop the activation process, if fieldMode is enabled.
             if (parent.control::FieldMode::fieldModeEnabled())
             {
@@ -110,6 +111,7 @@ auto Activation::activation(Activations value) -> Activations
 
         if (!minimum_ship_level::verify(versionStr))
         {
+            utils::createBmcDump(bus);
             return softwareServer::Activation::activation(
                 softwareServer::Activation::Activations::Failed);
         }
