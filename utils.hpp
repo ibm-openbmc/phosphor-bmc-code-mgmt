@@ -93,6 +93,14 @@ SubTreeResponse getSubTree(sdbusplus::bus::bus& bus,
 void mergeFiles(const std::vector<std::string>& srcFiles,
                 const std::string& dstFile);
 
+/**
+ * @brief Call phosphor-dump-manager to create BMC user dump
+ *
+ * @param[in] bus
+ **/
+
+void createBmcDump(sdbusplus::bus::bus& bus);
+
 namespace internal
 {
 
