@@ -88,6 +88,26 @@ auto Activation::activation(Activations value) -> Activations
 
     if (value == softwareServer::Activation::Activations::Activating)
     {
+#ifdef WANT_ACCESS_KEY_VERIFY
+        fs::path manifestPath(IMG_UPLOAD_DIR);
+        manifestPath /= (versionId + '/' + MANIFEST_FILE_NAME);
+
+        using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
+        UpdateAccessKey updateAccessKey(manifestPath);
+
+        updateAccessKey.sync();
+
+        if (!updateAccessKey.verify())
+        {
+            utils::createBmcDump(bus);
+            if (parent.control::FieldMode::fieldModeEnabled())
+            {
+                return softwareServer::Activation::activation(
+                    softwareServer::Activation::Activations::Failed);
+            }
+        }
+#endif
+
 #ifdef WANT_SIGNATURE_VERIFY
         fs::path uploadDir(IMG_UPLOAD_DIR);
         if (!verifySignature(uploadDir / versionId, SIGNED_IMAGE_CONF_PATH))
@@ -95,6 +115,7 @@ auto Activation::activation(Activations value) -> Activations
             using InvalidSignatureErr = sdbusplus::error::xyz::openbmc_project::
                 software::version::InvalidSignature;
             report<InvalidSignatureErr>();
+            utils::createBmcDump(bus);
             // Stop the activation process, if fieldMode is enabled.
             if (parent.control::FieldMode::fieldModeEnabled())
             {
@@ -108,6 +129,7 @@ auto Activation::activation(Activations value) -> Activations
 
         if (!minimum_ship_level::verify(versionStr))
         {
+            utils::createBmcDump(bus);
             return softwareServer::Activation::activation(
                 softwareServer::Activation::Activations::Failed);
         }
