@@ -52,6 +52,7 @@ void Activation::onStateChanges(sdbusplus::message_t& msg)
     {
         if (newStateResult == "failed" || newStateResult == "dependency")
         {
+            utils::createBmcDump(bus);
             Activation::activation(
                 softwareServer::Activation::Activations::Failed);
         }

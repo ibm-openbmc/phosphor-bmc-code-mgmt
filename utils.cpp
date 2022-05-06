@@ -96,6 +96,24 @@ void mergeFiles(const std::vector<std::string>& srcFiles,
     outFile.close();
 }
 
+void createBmcDump(sdbusplus::bus::bus& bus)
+{
+    auto method = bus.new_method_call(
+        "xyz.openbmc_project.Dump.Manager", "/xyz/openbmc_project/dump/bmc",
+        "xyz.openbmc_project.Dump.Create", "CreateDump");
+    method.append(
+        std::vector<
+            std::pair<std::string, std::variant<std::string, uint64_t>>>());
+    try
+    {
+        bus.call_noreply(method);
+    }
+    catch (const sdbusplus::exception::exception& e)
+    {
+        error("Failed to create BMC dump, exception:{ERROR}", "ERROR", e);
+    }
+}
+
 namespace internal
 {
 
