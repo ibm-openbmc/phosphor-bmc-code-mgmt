@@ -39,6 +39,11 @@ bool USBManager::run()
                 break;
             }
 
+            if (!setUSBProgress())
+            {
+                lg2::info("USB Code Update: Completed updating both sides");
+                break;
+            }
             try
             {
                 return fs::copy_file(fs::absolute(p.path()), dstPath);
@@ -56,10 +61,33 @@ bool USBManager::run()
     return false;
 }
 
+bool USBManager::setUSBProgress()
+{
+    auto usbDir = fs::path(PERSIST_DIR) / "usb";
+    fs::create_directories(usbDir);
+
+    auto progress1 = usbDir / "usb1";
+    if (!fs::exists(progress1))
+    {
+        std::ofstream os(progress1.c_str());
+        return true;
+    }
+
+    auto progress2 = usbDir / "usb2";
+    if (!fs::exists(progress2))
+    {
+        std::ofstream os(progress2.c_str());
+        return true;
+    }
+
+    fs::remove_all(usbDir);
+    return false;
+}
+
 void USBManager::setApplyTime()
 {
     utils::PropertyValue value =
-        "xyz.openbmc_project.Software.ApplyTime.RequestedApplyTimes.OnReset";
+        "xyz.openbmc_project.Software.ApplyTime.RequestedApplyTimes.Immediate";
     try
     {
         constexpr auto objectPath = "/xyz/openbmc_project/software/apply_time";
