@@ -60,8 +60,6 @@ class USBManager
     {
         if (!run())
         {
-            lg2::error("Failed to FW Update via USB, usbPath:{USBPATH}",
-                       "USBPATH", usbPath);
             event.exit(0);
         }
 
@@ -74,6 +72,15 @@ class USBManager
      *  @return Success or Fail
      */
     bool run();
+
+    /**
+     * @brief Set the USB progress to know if a code update on both sides have
+     *        been performed.
+     *
+     * @return True if the USB code update can continue, False if both sides
+     *         have been updated and the USB code update should not take place.
+     */
+    bool setUSBProgress();
 
   private:
     /** @brief Persistent sdbusplus DBus bus connection. */
