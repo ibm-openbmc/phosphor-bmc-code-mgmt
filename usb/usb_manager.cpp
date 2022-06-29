@@ -38,6 +38,7 @@ bool USBManager::run()
 
             if (!setUSBProgress())
             {
+                utils::writeSuccess(bus);
                 lg2::info("USB Code Update: Completed updating both sides");
                 break;
             }
@@ -67,6 +68,7 @@ bool USBManager::setUSBProgress()
     if (!fs::exists(progress1))
     {
         std::ofstream os(progress1.c_str());
+        utils::writeSideOneProgress(bus);
         return true;
     }
 
@@ -74,6 +76,7 @@ bool USBManager::setUSBProgress()
     if (!fs::exists(progress2))
     {
         std::ofstream os(progress2.c_str());
+        utils::writeSideTwoProgress(bus);
         return true;
     }
 
@@ -152,6 +155,44 @@ void USBManager::updateActivation(sdbusplus::message_t& msg)
             lg2::error("Failed in getting Activation status, ERROR:{ERROR}",
                        "ERROR", e.what());
         }
+    }
+}
+
+void USBManager::bmcCheckState(sdbusplus::message::message& msg)
+{
+    std::string interface, bmcState;
+    std::map<std::string, std::variant<std::string>> properties;
+
+    try
+    {
+        msg.read(interface, properties);
+
+        for (const auto& p : properties)
+        {
+            if (p.first == "CurrentBMCState")
+            {
+                bmcState = std::get<std::string>(p.second);
+                break;
+            }
+        }
+
+        if (bmcState.empty())
+        {
+            return;
+        }
+        else if (bmcState == "xyz.openbmc_project.State.BMC.BMCState.Ready")
+        {
+            if (!run())
+            {
+                event.exit(0);
+            }
+            isUSBCodeUpdate = true;
+        }
+    }
+    catch (const std::exception& e)
+    {
+        lg2::error("Failed in getting CurrentBMCState, ERROR:{ERROR}", "ERROR",
+                   e.what());
     }
 }
 

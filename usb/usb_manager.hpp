@@ -33,14 +33,37 @@ class USBManager
                         MatchRules::interfacesAdded() +
                             MatchRules::path("/xyz/openbmc_project/software"),
                         std::bind(std::mem_fn(&USBManager::updateActivation),
-                                  this, std::placeholders::_1))
+                                  this, std::placeholders::_1)),
+        bmcStateMatcher(
+            bus,
+            MatchRules::type::signal() +
+                MatchRules::member("PropertiesChanged") +
+                MatchRules::path("/xyz/openbmc_project/state/bmc0") +
+                MatchRules::argN(0, "xyz.openbmc_project.State.BMC") +
+                MatchRules::interface("org.freedesktop.DBus.Properties"),
+            std::bind(std::mem_fn(&USBManager::bmcCheckState), this,
+                      std::placeholders::_1))
     {
-        if (!run())
+        try
         {
-            event.exit(0);
-        }
+            auto bmcStateProp = utils::getProperty<std::string>(
+                bus, "/xyz/openbmc_project/state/bmc0",
+                "xyz.openbmc_project.State.BMC", "CurrentBMCState");
+            if (bmcStateProp == "xyz.openbmc_project.State.BMC.BMCState.Ready")
+            {
+                if (!run())
+                {
+                    event.exit(0);
+                }
 
-        isUSBCodeUpdate = true;
+                isUSBCodeUpdate = true;
+            }
+        }
+        catch (const std::exception& e)
+        {
+            lg2::error("Failed in getting CurrentBMCState, ERROR:{ERROR}",
+                       "ERROR", e.what());
+        }
     }
 
     /** @brief Find the first file with a .tar extension according to the USB
@@ -76,6 +99,12 @@ class USBManager
      */
     bool setUSBProgress();
 
+    /** @brief Calls run() if bmc is in ready state.
+     *
+     * @param[in]  msg   - Data associated with subscribed signal
+     */
+    void bmcCheckState(sdbusplus::message::message& msg);
+
   private:
     /** @brief Persistent sdbusplus DBus bus connection. */
     sdbusplus::bus_t& bus;
@@ -94,6 +123,9 @@ class USBManager
 
     /** sdbusplus signal match for new image. */
     sdbusplus::bus::match_t fwUpdateMatcher;
+
+    /** sdbusplus signal match for bmc ready state. */
+    sdbusplus::bus::match_t bmcStateMatcher;
 };
 
 } // namespace usb
