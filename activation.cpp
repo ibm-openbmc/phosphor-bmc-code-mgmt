@@ -7,11 +7,13 @@
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/post.hpp>
+#include <elog-errors.hpp>
 #include <phosphor-logging/elog-errors.hpp>
 #include <phosphor-logging/elog.hpp>
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/exception.hpp>
 #include <xyz/openbmc_project/Common/error.hpp>
+#include <xyz/openbmc_project/Software/Image/error.hpp>
 #include <xyz/openbmc_project/Software/Version/error.hpp>
 
 #ifdef WANT_SIGNATURE_VERIFY
@@ -281,8 +283,25 @@ auto Activation::requestedActivation(RequestedActivations value)
             (softwareServer::Activation::activation() ==
              softwareServer::Activation::Activations::Failed))
         {
-            Activation::activation(
-                softwareServer::Activation::Activations::Activating);
+            if (parent.activationInProgress())
+            {
+                namespace Software =
+                    phosphor::logging::xyz::openbmc_project::Software;
+                using Busy = Software::Image::BusyFailure;
+                using BusyFailure = sdbusplus::xyz::openbmc_project::Software::
+                    Image::Error::BusyFailure;
+                report<BusyFailure>(Busy::PATH(
+                    "xyz.openbmc_project.Software.Activation.Activations."
+                    "Ready"));
+                utils::createBmcDump(bus);
+                Activation::activation(
+                    softwareServer::Activation::Activations::Failed);
+            }
+            else
+            {
+                Activation::activation(
+                    softwareServer::Activation::Activations::Activating);
+            }
         }
     }
     return softwareServer::Activation::requestedActivation(value);
