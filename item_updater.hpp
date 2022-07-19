@@ -164,6 +164,14 @@ class ItemUpdater : public ItemUpdaterInherit
      */
     void createUpdateableAssociation(const std::string& path);
 
+    /**
+     * @brief Check if any activations are currently happening
+     *
+     * @return true if another image is being activated, false if otherwise
+     */
+
+    bool activationInProgress();
+
     /** @brief Persistent map of Version D-Bus objects and their
      * version id */
     std::map<std::string, std::unique_ptr<VersionClass>> versions;
