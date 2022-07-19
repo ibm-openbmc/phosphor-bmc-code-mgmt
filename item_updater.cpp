@@ -887,6 +887,19 @@ void ItemUpdater::getRunningSlot()
     f >> runningImageSlot;
 }
 
+bool ItemUpdater::activationInProgress()
+{
+    for (const auto& i : activations)
+    {
+        if (i.second.get()->activation() ==
+            server::Activation::Activations::Activating)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 } // namespace updater
 } // namespace software
 } // namespace phosphor
