@@ -101,9 +101,6 @@ auto Activation::activation(Activations value) -> Activations
             // Stop the activation process, if fieldMode is enabled.
             if (parent.control::FieldMode::fieldModeEnabled())
             {
-#ifdef USB_DEFINED
-                utils::writeFail(bus);
-#endif
                 return softwareServer::Activation::activation(
                     softwareServer::Activation::Activations::Failed);
             }
@@ -115,9 +112,6 @@ auto Activation::activation(Activations value) -> Activations
         if (!minimum_ship_level::verify(versionStr))
         {
             utils::createBmcDump(bus);
-#ifdef USB_DEFINED
-            utils::writeFail(bus);
-#endif
             return softwareServer::Activation::activation(
                 softwareServer::Activation::Activations::Failed);
         }
