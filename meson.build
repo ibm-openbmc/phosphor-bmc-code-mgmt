@@ -71,7 +71,6 @@ conf.set('WANT_SIGNATURE_VERIFY', \
     get_option('verify-signature').enabled() or \
     get_option('verify-full-signature').enabled())
 conf.set('WANT_SIGNATURE_FULL_VERIFY', get_option('verify-full-signature').enabled())
-conf.set('USB_DEFINED', get_option('usb-code-update').enabled())
 
 # Configurable variables
 conf.set('ACTIVE_BMC_MAX_ALLOWED', get_option('active-bmc-max-allowed'))
