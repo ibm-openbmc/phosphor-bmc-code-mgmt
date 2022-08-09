@@ -127,6 +127,16 @@ bool UpdateAccessKey::verify()
     // string to a length of 8 characters--excluding build's time information.
     std::string buildIDTrunc = buildID.substr(0, 8);
 
+    // If BuildID value is the designated value of 00000000, that means the
+    // image being updated is an emergency service pack and should bypass the
+    // UAK check.
+
+    if (buildIDTrunc == "00000000")
+    {
+        debug("Access Key valid. BMC will begin activating.");
+        return true;
+    }
+
     using namespace phosphor::logging;
     using AccessKeyErr = sdbusplus::xyz::openbmc_project::Software::Version::
         Error::ExpiredAccessKey;
