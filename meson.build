@@ -154,6 +154,12 @@ unit_files = [
     'xyz.openbmc_project.Software.Version.service.in'
 ]
 
+if get_option('bmc-layout').contains('mmc')
+    unit_files += 'mmc/xyz.openbmc_project.Software.Version.service.in'
+else
+    unit_files += 'xyz.openbmc_project.Software.Version.service.in'
+endif
+
 subdir('xyz/openbmc_project/Software/Image')
 
 image_updater_sources = files(
