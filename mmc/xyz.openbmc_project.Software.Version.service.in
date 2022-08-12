@@ -2,7 +2,8 @@
 Description=Phosphor Version Software Manager
 
 [Service]
-ExecStartPre=/bin/sh -c 'mkdir -p /var/tmp/images'
+ExecStartPre=/bin/sh -c 'mkdir -p /var/tmp/images/'
+ExecStartPre=/bin/sh -c 'rm -rf /var/tmp/images/*'
 ExecStartPre=/bin/sh -c 'ln -s /var/tmp/images /tmp/images'
 ExecStart=/usr/bin/phosphor-version-software-manager
 Restart=always
