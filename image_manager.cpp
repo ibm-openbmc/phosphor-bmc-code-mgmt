@@ -72,6 +72,17 @@ std::vector<std::string> getSoftwareObjects(sdbusplus::bus_t& bus)
     return paths;
 }
 
+void clearTmpImagePath(const std::string& dirPath)
+{
+    if (std::filesystem::is_directory(dirPath))
+    {
+        for (const auto& i : std::filesystem::directory_iterator(dirPath))
+        {
+            std::filesystem::remove_all(i);
+        }
+    }
+}
+
 } // namespace
 
 int Manager::processImage(const std::string& tarFilePath)
@@ -278,6 +289,7 @@ int Manager::unTar(const std::string& tarFilePath,
         // execl only returns on fail
         error("Failed to execute untar on {PATH}", "PATH", tarFilePath);
         report<UnTarFailure>(UnTarFail::PATH(tarFilePath.c_str()));
+        clearTmpImagePath(std::string{IMG_UPLOAD_DIR});
         return -1;
     }
     else if (pid > 0)
@@ -288,6 +300,7 @@ int Manager::unTar(const std::string& tarFilePath,
             error("Failed ({STATUS}) to untar file {PATH}", "STATUS", status,
                   "PATH", tarFilePath);
             report<UnTarFailure>(UnTarFail::PATH(tarFilePath.c_str()));
+            clearTmpImagePath(std::string{IMG_UPLOAD_DIR});
             return -1;
         }
     }
@@ -295,6 +308,7 @@ int Manager::unTar(const std::string& tarFilePath,
     {
         error("fork() failed: {ERRNO}", "ERRNO", errno);
         report<UnTarFailure>(UnTarFail::PATH(tarFilePath.c_str()));
+        clearTmpImagePath(std::string{IMG_UPLOAD_DIR});
         return -1;
     }
 
