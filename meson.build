@@ -142,6 +142,12 @@ ssl = dependency('openssl')
 systemd = dependency('systemd')
 systemd_system_unit_dir = systemd.get_variable('systemdsystemunitdir')
 
+if cpp.has_header('CLI/CLI.hpp')
+    CLI11 = declare_dependency()
+else
+    CLI11 = dependency('CLI11')
+endif
+
 unit_files = [
     'obmc-flash-bmc-setenv@.service.in',
     'reboot-guard-disable.service.in',
@@ -276,6 +282,15 @@ executable(
     'version.cpp',
     'watch.cpp',
     dependencies: [deps, ssl],
+    install: true
+)
+
+executable(
+    'software-manager-tool',
+    'msl_verify.cpp',
+    'software_manager_tool.cpp',
+    'utils.cpp',
+    dependencies: [CLI11, deps],
     install: true
 )
 
