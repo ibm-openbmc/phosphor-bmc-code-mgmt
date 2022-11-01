@@ -2,16 +2,21 @@
 
 #include "msl_verify.hpp"
 
+#include "utils.hpp"
 #include "version.hpp"
 
 #include <phosphor-logging/elog-errors.hpp>
 #include <phosphor-logging/elog.hpp>
 #include <phosphor-logging/lg2.hpp>
+#include <xyz/openbmc_project/Common/error.hpp>
 #include <xyz/openbmc_project/Software/Version/error.hpp>
 
 #include <regex>
 
 PHOSPHOR_LOG2_USING;
+using namespace phosphor::logging;
+using InternalFailure =
+    sdbusplus::xyz::openbmc_project::Common::Error::InternalFailure;
 
 int minimum_ship_level::compare(const Version& versionToCompare,
                                 const Version& mslVersion)
@@ -58,10 +63,20 @@ void minimum_ship_level::parse(const std::string& inpVersion,
 
 bool minimum_ship_level::verify(const std::string& versionManifest)
 {
+    auto isUninitialized = [](std::string mslStr) {
+        return (mslStr.empty() || (mslStr.front() == '\0') ||
+                isspace(mslStr.front()) || (mslStr.front() == '0'));
+    };
+
     //  If there is no msl or mslRegex return upgrade is needed.
     std::string msl{BMC_MSL};
     std::string mslRegex{REGEX_BMC_MSL};
-    if (msl.empty() || mslRegex.empty())
+    if (msl.empty())
+    {
+        //  If the minimum level was not set as a compile-time option, check VPD
+        msl = readSystemKeyword();
+    }
+    if ((isUninitialized(msl)) || mslRegex.empty())
     {
         return true;
     }
@@ -103,4 +118,73 @@ bool minimum_ship_level::verify(const std::string& versionManifest)
     }
 
     return true;
+}
+
+std::string minimum_ship_level::readSystemKeyword()
+{
+    std::string minLevel{};
+    auto bus = sdbusplus::bus::new_default();
+    auto method = bus.new_method_call(
+        "xyz.openbmc_project.Inventory.Manager",
+        "/xyz/openbmc_project/inventory/system/chassis/motherboard",
+        "org.freedesktop.DBus.Properties", "Get");
+    method.append("com.ibm.ipzvpd.VSYS");
+    method.append("FV");
+
+    try
+    {
+        auto result = bus.call(method);
+        if (!result.is_method_error())
+        {
+            std::variant<std::vector<uint8_t>> value;
+            result.read(value);
+            auto prop = std::get<std::vector<uint8_t>>(value);
+            minLevel.assign(reinterpret_cast<const char*>(prop.data()),
+                            prop.size());
+        }
+    }
+    catch (const sdbusplus::exception::exception& e)
+    {
+        error("Error reading VPD keyword: {ERROR}", "ERROR", e);
+        report<InternalFailure>();
+    }
+    return minLevel;
+}
+
+void minimum_ship_level::writeSystemKeyword(const std::string& value)
+{
+    auto bus = sdbusplus::bus::new_default();
+    constexpr auto vpdPath = "/com/ibm/VPD/Manager";
+    constexpr auto vpdInterface = "com.ibm.VPD.Manager";
+    constexpr auto objectPath =
+        "/xyz/openbmc_project/inventory/system/chassis/motherboard";
+    constexpr auto vpdRecord = "VSYS";
+    constexpr auto vpdKeyword = "FV";
+    std::vector<uint8_t> vpdValue(value.begin(), value.end());
+
+    try
+    {
+        auto service = utils::getService(bus, vpdPath, vpdInterface);
+        auto method = bus.new_method_call(service.c_str(), vpdPath,
+                                          vpdInterface, "WriteKeyword");
+        method.append(static_cast<sdbusplus::message::object_path>(objectPath),
+                      vpdRecord, vpdKeyword, vpdValue);
+        bus.call_noreply(method);
+    }
+    catch (const sdbusplus::exception::exception& e)
+    {
+        error("Error writing VPD keyword to {MIN_LEVEL}: {ERROR}", "MIN_LEVEL",
+              value, "ERROR", e);
+        report<InternalFailure>();
+    }
+}
+
+void minimum_ship_level::set()
+{
+    writeSystemKeyword("fw1030.00-00");
+}
+
+void minimum_ship_level::reset()
+{
+    writeSystemKeyword("fw1020.00-00");
 }
