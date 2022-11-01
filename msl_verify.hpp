@@ -38,14 +38,18 @@ void parse(const std::string& versionStr, Version& version);
  */
 int compare(const Version& a, const Version& b);
 
-/** @brief Check if the minimum ship level option is enabled
- *  @return true if enabled, false otherwise
- */
-bool enabled();
+/** @brief Read the Min Ship Level from VPD */
+std::string readSystemKeyword();
 
-/** @brief Get the minimum version
- *  @return[out] msl - Minimum version string
+/** @brief Write the Min Ship Level to VPD */
+void writeSystemKeyword(const std::string& value);
+
+/** @brief Set the minimum ship level in VPD to a predefined value */
+void set();
+
+/** @brief Set the minimum ship level in VPD to the GA level to allow
+ *         downgrades
  */
-std::string getMinimumVersion();
+void reset();
 
 } // namespace minimum_ship_level
