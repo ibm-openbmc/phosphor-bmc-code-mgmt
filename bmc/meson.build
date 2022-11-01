@@ -97,6 +97,12 @@ endif
 
 configure_file(output: 'config.h', configuration: conf)
 
+if cpp.has_header('CLI/CLI.hpp')
+    CLI11 = declare_dependency()
+else
+    CLI11 = dependency('CLI11')
+endif
+
 unit_files = [
     'obmc-flash-bmc-setenv@.service.in',
     'reboot-guard-disable.service.in',
@@ -323,12 +329,13 @@ endif
 
 if get_option('software-manager-tool').allowed()
     executable(
-        'phosphor-software-manager-tool',
+        'software-manager-tool',
+        'msl_verify.cpp',
         'software_manager_tool.cpp',
         'code_updater_manager.cpp',
         'utils.cpp',
-        dependencies: deps,
+        dependencies: [CLI11, deps],
         install: true,
-        install_dir: get_option('bindir'),
+        install_dir: get_option('libexecdir') / 'phosphor-code-mgmt',
     )
 endif
