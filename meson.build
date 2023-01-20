@@ -306,7 +306,8 @@ executable(
     'msl_verify.cpp',
     'software_manager_tool.cpp',
     'utils.cpp',
-    dependencies: [CLI11, deps],
+    'version.cpp',
+    dependencies: [CLI11, deps, ssl],
     install: true
 )
 
