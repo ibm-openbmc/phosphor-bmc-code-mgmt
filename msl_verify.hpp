@@ -44,7 +44,10 @@ std::string readSystemKeyword();
 /** @brief Write the Min Ship Level to VPD */
 void writeSystemKeyword(const std::string& value);
 
-/** @brief Set the minimum ship level in VPD to a predefined value */
+/** @brief Set the minimum ship level in VPD to the current version if it
+ *         matches the format of the msl regex, or to a predefined value
+ *         otherwise.
+ */
 void set();
 
 /** @brief Set the minimum ship level in VPD to the GA level to allow
