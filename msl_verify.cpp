@@ -181,7 +181,31 @@ void minimum_ship_level::writeSystemKeyword(const std::string& value)
 
 void minimum_ship_level::set()
 {
-    writeSystemKeyword("fw1030.00-00");
+    // Predefined msl version string
+    std::string msl{"fw1030.00-00"};
+    std::string mslRegex{REGEX_BMC_MSL};
+
+    auto version =
+        phosphor::software::manager::Version::getBMCVersion(OS_RELEASE_FILE);
+
+    if (!mslRegex.empty())
+    {
+        std::smatch match;
+        std::regex rx{mslRegex, std::regex::extended};
+        if (std::regex_search(version, match, rx))
+        {
+            msl = match.str(0);
+        }
+    }
+
+    info("Current version: {VERSION}. Setting Minimum Ship Level to: {MSL}",
+         "VERSION", version, "MSL", msl);
+
+    // The VPD field is 32 bytes long and the default value is all 'spaces'. Pad
+    // the string with spaces to avoid leftover characters from a previous value
+    // that may had been longer.
+    msl.append(32 - msl.length(), ' ');
+    writeSystemKeyword(msl);
 }
 
 void minimum_ship_level::reset()
