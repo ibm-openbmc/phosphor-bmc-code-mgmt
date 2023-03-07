@@ -71,6 +71,7 @@ conf.set('WANT_SIGNATURE_VERIFY', \
     get_option('verify-signature').enabled() or \
     get_option('verify-full-signature').enabled())
 conf.set('WANT_SIGNATURE_FULL_VERIFY', get_option('verify-full-signature').enabled())
+conf.set('WANT_ACCESS_KEY_VERIFY', get_option('verify-update-access-key').enabled())
 
 # Configurable variables
 conf.set('ACTIVE_BMC_MAX_ALLOWED', get_option('active-bmc-max-allowed'))
@@ -142,6 +143,12 @@ ssl = dependency('openssl')
 systemd = dependency('systemd')
 systemd_system_unit_dir = systemd.get_variable(pkgconfig : 'systemdsystemunitdir')
 
+if cpp.has_header('CLI/CLI.hpp')
+    CLI11 = declare_dependency()
+else
+    CLI11 = dependency('CLI11')
+endif
+
 unit_files = [
     'obmc-flash-bmc-setenv@.service.in',
     'reboot-guard-disable.service.in',
@@ -206,6 +213,7 @@ elif get_option('bmc-layout').contains('mmc')
         'mmc/obmc-flash-mmc-remove@.service.in',
         'mmc/obmc-flash-mmc-setprimary@.service.in',
         'mmc/obmc-flash-mmc-umount.service.in',
+        'mmc/obmc-flash-mmc-mirroruboot.service.in',
     ]
 endif
 
@@ -250,6 +258,12 @@ if (get_option('verify-signature').enabled() or \
     )
 endif
 
+if (get_option('verify-update-access-key').enabled())
+    image_updater_sources += files(
+        'uak_verify.cpp'
+    )
+endif
+
 executable(
     'phosphor-download-manager',
     'download_manager.cpp',
@@ -276,6 +290,16 @@ executable(
     'version.cpp',
     'watch.cpp',
     dependencies: [deps, ssl],
+    install: true
+)
+
+executable(
+    'software-manager-tool',
+    'msl_verify.cpp',
+    'software_manager_tool.cpp',
+    'utils.cpp',
+    'version.cpp',
+    dependencies: [CLI11, deps, ssl],
     install: true
 )
 

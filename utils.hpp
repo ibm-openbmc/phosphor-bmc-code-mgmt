@@ -9,6 +9,10 @@
 namespace utils
 {
 
+using Path = std::string;
+using Service = std::string;
+using Interfaces = std::vector<std::string>;
+using SubTreeResponse = std::map<Path, std::map<Service, Interfaces>>;
 using PropertyValue = std::variant<std::string>;
 
 /**
@@ -64,6 +68,20 @@ T getProperty(sdbusplus::bus_t& bus, const std::string& objectPath,
 void setProperty(sdbusplus::bus_t& bus, const std::string& objectPath,
                  const std::string& interface, const std::string& propertyName,
                  const PropertyValue& value);
+
+/**
+ * @brief Get the Subtree response from the mapper
+ *
+ *  @param[in] bus       - bus handler
+ *  @param[in] interface - Interface in the subtree to search for
+ *
+ *  @return SubTreeResponse - Map of object paths to a map of service names to
+ * their interfaces.
+ *
+ *  @throw sdbusplus::exception::exception when it fails
+ */
+SubTreeResponse getSubTree(sdbusplus::bus::bus& bus,
+                           const std::string& interface);
 
 /**
  * @brief Merge more files
