@@ -12,10 +12,15 @@
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/exception.hpp>
 #include <xyz/openbmc_project/Common/error.hpp>
+#include <xyz/openbmc_project/Software/Image/error.hpp>
 #include <xyz/openbmc_project/Software/Version/error.hpp>
 
 #ifdef WANT_SIGNATURE_VERIFY
 #include "image_verify.hpp"
+#endif
+
+#ifdef WANT_ACCESS_KEY_VERIFY
+#include "uak_verify.hpp"
 #endif
 
 extern boost::asio::io_context& getIOContext();
@@ -35,6 +40,10 @@ using InternalFailure =
     sdbusplus::xyz::openbmc_project::Common::Error::InternalFailure;
 
 #ifdef WANT_SIGNATURE_VERIFY
+namespace control = sdbusplus::xyz::openbmc_project::Control::server;
+#endif
+
+#ifdef WANT_ACCESS_KEY_VERIFY
 namespace control = sdbusplus::xyz::openbmc_project::Control::server;
 #endif
 
@@ -90,6 +99,26 @@ auto Activation::activation(Activations value) -> Activations
 
     if (value == softwareServer::Activation::Activations::Activating)
     {
+#ifdef WANT_ACCESS_KEY_VERIFY
+        fs::path manifestPath(IMG_UPLOAD_DIR);
+        manifestPath /= (versionId + '/' + MANIFEST_FILE_NAME);
+
+        using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
+        UpdateAccessKey updateAccessKey(manifestPath);
+
+        updateAccessKey.sync();
+
+        if (!updateAccessKey.verify())
+        {
+            utils::createBmcDump(bus);
+            if (parent.control::FieldMode::fieldModeEnabled())
+            {
+                return softwareServer::Activation::activation(
+                    softwareServer::Activation::Activations::Failed);
+            }
+        }
+#endif
+
 #ifdef WANT_SIGNATURE_VERIFY
         fs::path uploadDir(IMG_UPLOAD_DIR);
         if (!verifySignature(uploadDir / versionId, SIGNED_IMAGE_CONF_PATH))
@@ -97,6 +126,7 @@ auto Activation::activation(Activations value) -> Activations
             using InvalidSignatureErr = sdbusplus::xyz::openbmc_project::
                 Software::Version::Error::InvalidSignature;
             report<InvalidSignatureErr>();
+            utils::createBmcDump(bus);
             // Stop the activation process, if fieldMode is enabled.
             if (parent.control::FieldMode::fieldModeEnabled())
             {
@@ -110,6 +140,7 @@ auto Activation::activation(Activations value) -> Activations
 
         if (!minimum_ship_level::verify(versionStr))
         {
+            utils::createBmcDump(bus);
             return softwareServer::Activation::activation(
                 softwareServer::Activation::Activations::Failed);
         }
@@ -278,8 +309,18 @@ auto Activation::requestedActivation(RequestedActivations value)
             (softwareServer::Activation::activation() ==
              softwareServer::Activation::Activations::Failed))
         {
-            Activation::activation(
-                softwareServer::Activation::Activations::Activating);
+            if (parent.activationInProgress())
+            {
+                error("Another code update is already in progress");
+                utils::createBmcDump(bus);
+                Activation::activation(
+                    softwareServer::Activation::Activations::Failed);
+            }
+            else
+            {
+                Activation::activation(
+                    softwareServer::Activation::Activations::Activating);
+            }
         }
     }
     return softwareServer::Activation::requestedActivation(value);
