@@ -108,7 +108,7 @@ auto Activation::activation(Activations value) -> Activations
 
         updateAccessKey.sync();
 
-        if (!updateAccessKey.verify())
+        if (!updateAccessKey.verify(""))
         {
             utils::createBmcDump(bus);
             if (parent.control::FieldMode::fieldModeEnabled())

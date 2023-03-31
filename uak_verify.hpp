@@ -31,7 +31,7 @@ class UpdateAccessKey
     /** @brief Verify if the current image BUILD_ID meet the access key criteria
      *  @return true if the verification succeeded, false otherwise
      */
-    bool verify();
+    bool verify(const std::string& gaDate);
 
     /** @brief Syncs the update access key found in VPD and flash memory */
     void sync();
