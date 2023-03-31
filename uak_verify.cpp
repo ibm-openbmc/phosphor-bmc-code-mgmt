@@ -114,13 +114,20 @@ std::string UpdateAccessKey::getBuildID()
     return buildID;
 }
 
-bool UpdateAccessKey::verify()
+bool UpdateAccessKey::verify(const std::string& gaDate)
 {
     constexpr auto motherboardObjectPath =
         "/xyz/openbmc_project/inventory/system/chassis/motherboard";
     std::string expirationDate{};
     std::string buildID{};
-    buildID = getBuildID();
+    if (gaDate.empty())
+    {
+        buildID = getBuildID();
+    }
+    else
+    {
+        buildID = gaDate;
+    }
     expirationDate = getUpdateAccessExpirationDate(motherboardObjectPath);
 
     // Ensure that BUILD_ID date is in the YYYYMMDD format but truncating the
@@ -159,8 +166,8 @@ bool UpdateAccessKey::verify()
             "Update Access Key validation failed. Expiration Date: {EXP_DATE}. "
             "Build date: {BUILD_ID}.",
             "EXP_DATE", expirationDate, "BUILD_ID", buildIDTrunc);
-        report<AccessKeyErr>(ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
-                             ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
+        elog<AccessKeyErr>(ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
+                           ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
         return false;
     }
     catch (...)
@@ -169,8 +176,8 @@ bool UpdateAccessKey::verify()
             "Update Access Key validation failed. Expiration Date: {EXP_DATE}. "
             "Build date: {BUILD_ID}.",
             "EXP_DATE", expirationDate, "BUILD_ID", buildIDTrunc);
-        report<AccessKeyErr>(ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
-                             ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
+        elog<AccessKeyErr>(ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
+                           ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
     }
     return false;
 }
