@@ -49,8 +49,10 @@ void writeSystemKeyword(const std::string& value);
  */
 void set();
 
-/** @brief Set the minimum ship level in VPD to the GA level to allow
- *         downgrades
+/** @brief Create a file to indicate the subsequent code update process to set
+ *         the minimum ship level to the image version used for the update.
+ *         Default this value to the GA level in case the image version does not
+ *         match the regex format.
  */
 void reset();
 
