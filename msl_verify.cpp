@@ -11,12 +11,15 @@
 #include <xyz/openbmc_project/Common/error.hpp>
 #include <xyz/openbmc_project/Software/Version/error.hpp>
 
+#include <filesystem>
 #include <regex>
 
 PHOSPHOR_LOG2_USING;
 using namespace phosphor::logging;
 using InternalFailure =
     sdbusplus::error::xyz::openbmc_project::common::InternalFailure;
+
+constexpr auto resetFile = "/tmp/reset-msl";
 
 int minimum_ship_level::compare(const Version& versionToCompare,
                                 const Version& mslVersion)
@@ -71,6 +74,25 @@ bool minimum_ship_level::verify(const std::string& versionManifest)
     //  If there is no msl or mslRegex return upgrade is needed.
     std::string msl{BMC_MSL};
     std::string mslRegex{REGEX_BMC_MSL};
+
+    // The MSL value was requested to be reset.
+    if (std::filesystem::exists(resetFile))
+    {
+        // Predefined reset msl version string
+        std::string resetStr{"fw1020.00-00"};
+        if (!mslRegex.empty())
+        {
+            std::smatch match;
+            std::regex rx{mslRegex, std::regex::extended};
+            if (std::regex_search(versionManifest, match, rx))
+            {
+                resetStr = match.str(0);
+            }
+        }
+        info("Resetting Minimum Ship Level to: {MSL}", "MSL", resetStr);
+        writeSystemKeyword(resetStr);
+    }
+
     if (msl.empty())
     {
         //  If the minimum level was not set as a compile-time option, check VPD
@@ -160,7 +182,12 @@ void minimum_ship_level::writeSystemKeyword(const std::string& value)
         "/xyz/openbmc_project/inventory/system/chassis/motherboard";
     constexpr auto vpdRecord = "VSYS";
     constexpr auto vpdKeyword = "FV";
+
+    // The VPD field is 32 bytes long and the default value is all 'spaces'. Pad
+    // the string with spaces to avoid leftover characters from a previous value
+    // that may had been longer.
     std::vector<uint8_t> vpdValue(value.begin(), value.end());
+    vpdValue.insert(vpdValue.end(), 32 - vpdValue.size(), ' ');
 
     try
     {
@@ -201,14 +228,10 @@ void minimum_ship_level::set()
     info("Current version: {VERSION}. Setting Minimum Ship Level to: {MSL}",
          "VERSION", version, "MSL", msl);
 
-    // The VPD field is 32 bytes long and the default value is all 'spaces'. Pad
-    // the string with spaces to avoid leftover characters from a previous value
-    // that may had been longer.
-    msl.append(32 - msl.length(), ' ');
     writeSystemKeyword(msl);
 }
 
 void minimum_ship_level::reset()
 {
-    writeSystemKeyword("fw1020.00-00");
+    std::ofstream outputFile(resetFile);
 }
