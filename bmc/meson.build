@@ -335,7 +335,7 @@ if get_option('software-manager-tool').allowed()
         'code_updater_manager.cpp',
         'utils.cpp',
         'version.cpp',
-        dependencies: [CLI11, deps, ssl],
+        dependencies: [CLI11, deps, ssl_dep],
         install: true,
         install_dir: get_option('libexecdir') / 'phosphor-code-mgmt',
     )
