@@ -15,6 +15,7 @@
 #include <xyz/openbmc_project/Software/Image/error.hpp>
 #include <xyz/openbmc_project/Software/Version/error.hpp>
 
+#include <regex>
 #ifdef WANT_SIGNATURE_VERIFY
 #include "image_verify.hpp"
 #endif
@@ -38,7 +39,8 @@ PHOSPHOR_LOG2_USING;
 using namespace phosphor::logging;
 using InternalFailure =
     sdbusplus::xyz::openbmc_project::Common::Error::InternalFailure;
-
+using AccessKeyErr =
+    sdbusplus::xyz::openbmc_project::Software::Version::Error::ExpiredAccessKey;
 #ifdef WANT_SIGNATURE_VERIFY
 namespace control = sdbusplus::xyz::openbmc_project::Control::server;
 #endif
@@ -89,6 +91,41 @@ void Activation::unsubscribeFromSystemdSignals()
     return;
 }
 
+std::string Activation::getBuildID(const std::string& manifestPath)
+{
+    std::string buildIDKey = "BuildId";
+    std::string buildIDValue{};
+    std::string buildID{};
+    std::size_t pos;
+    std::ifstream efile(manifestPath);
+    std::string line;
+    const std::regex pattern("\\d+-\\d+");
+    while (getline(efile, line))
+    {
+        if (line.substr(0, buildIDKey.size()).find(buildIDKey) !=
+            std::string::npos)
+        {
+            buildIDValue = line.substr(buildIDKey.size());
+            pos = buildIDValue.find_first_of('=') + 1;
+            buildID = buildIDValue.substr(pos);
+            break;
+        }
+    }
+    efile.close();
+    if (buildID.empty())
+    {
+        error("BMC build id is empty");
+    }
+
+    if (std::regex_match(buildID, pattern))
+    {
+        isHiper = true;
+        pos = buildID.find_first_of("-") + 1;
+        buildID = buildID.substr(pos);
+    }
+    return buildID;
+}
+
 auto Activation::activation(Activations value) -> Activations
 {
     if ((value != softwareServer::Activation::Activations::Active) &&
@@ -106,10 +143,31 @@ auto Activation::activation(Activations value) -> Activations
         using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
         UpdateAccessKey updateAccessKey(manifestPath);
 
+        using VersionClass = phosphor::software::manager::Version;
+
+        std::string versionID =
+            VersionClass::getValue(manifestPath.string(), "version");
+        std::string currVersion = versionID.substr(2, 4);
+        std::string buildIDTrunc = getBuildID(manifestPath);
+
         updateAccessKey.sync();
 
-        if (!updateAccessKey.verify())
+        try
         {
+            if (!updateAccessKey.verify(buildIDTrunc, currVersion, isHiper))
+            {
+                commit<AccessKeyErr>();
+                utils::createBmcDump(bus);
+                if (parent.control::FieldMode::fieldModeEnabled())
+                {
+                    return softwareServer::Activation::activation(
+                        softwareServer::Activation::Activations::Failed);
+                }
+            }
+        }
+        catch (const std::exception& e)
+        {
+            commit<AccessKeyErr>();
             utils::createBmcDump(bus);
             if (parent.control::FieldMode::fieldModeEnabled())
             {

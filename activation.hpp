@@ -349,6 +349,10 @@ class Activation : public ActivationInherit, public Flash
     /** @brief Called when image verification fails. */
     void onVerifyFailed();
 #endif
+
+    std::string getBuildID(const std::string& manifestPath);
+
+    bool isHiper = false;
 };
 
 } // namespace updater
