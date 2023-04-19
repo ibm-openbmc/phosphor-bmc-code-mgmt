@@ -106,9 +106,16 @@ auto Activation::activation(Activations value) -> Activations
         using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
         UpdateAccessKey updateAccessKey(manifestPath);
 
+        using VersionClass = phosphor::software::manager::Version;
+        std::string extendedVersion =
+            VersionClass::getValue(manifestPath.string(), "ExtendedVersion");
+        std::string extendVersion = extendedVersion.substr(2, 4);
+
+        
+
         updateAccessKey.sync();
 
-        if (!updateAccessKey.verify())
+        if (!updateAccessKey.verify("", extendVersion, false))
         {
             utils::createBmcDump(bus);
             if (parent.control::FieldMode::fieldModeEnabled())

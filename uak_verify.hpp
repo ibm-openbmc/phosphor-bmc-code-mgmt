@@ -28,10 +28,12 @@ class UpdateAccessKey
     UpdateAccessKey(const fs::path& manifestPath) : manifestPath(manifestPath)
     {}
 
+    bool checkIfUAKValid(const std::string& buildID);
+
     /** @brief Verify if the current image BUILD_ID meet the access key criteria
      *  @return true if the verification succeeded, false otherwise
      */
-    bool verify();
+    bool verify(const std::string& gaDate, const std::string& version, bool isHiper);
 
     /** @brief Syncs the update access key found in VPD and flash memory */
     void sync();
@@ -58,6 +60,10 @@ class UpdateAccessKey
 
     /** @brief Manifest file path */
     fs::path manifestPath;
+
+    std::string buildIDTrunc {};
+
+    std::string expirationDate{};
 };
 
 } // namespace image
