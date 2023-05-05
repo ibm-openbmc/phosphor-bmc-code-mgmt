@@ -111,6 +111,7 @@ image_updater_sources = files(
     'activation.cpp',
     'images.cpp',
     'item_updater.cpp',
+    'lid.cpp',
     'msl_verify.cpp',
     'serialize.cpp',
     'update_manager.cpp',
