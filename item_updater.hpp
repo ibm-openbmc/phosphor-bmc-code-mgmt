@@ -2,6 +2,7 @@
 
 #include "activation.hpp"
 #include "item_updater_helper.hpp"
+#include "lid.hpp"
 #include "msl_verify.hpp"
 #include "version.hpp"
 #include "xyz/openbmc_project/Collection/DeleteAll/server.hpp"
@@ -36,6 +37,7 @@ using MinimumVersionInherit = sdbusplus::server::object_t<
 
 namespace MatchRules = sdbusplus::bus::match::rules;
 using VersionClass = phosphor::software::manager::Version;
+using LidClass = phosphor::software::manager::Lid;
 using AssociationList =
     std::vector<std::tuple<std::string, std::string, std::string>>;
 
@@ -99,6 +101,8 @@ class ItemUpdater : public ItemUpdaterInherit
 #ifdef HOST_BIOS_UPGRADE
         createBIOSObject();
 #endif
+        lidClass = std::make_unique<phosphor::software::manager::Lid>(
+            bus, path.c_str());
         emit_object_added();
     };
 
@@ -321,6 +325,9 @@ class ItemUpdater : public ItemUpdaterInherit
     /** @brief Persistent Version D-Bus object for BIOS */
     std::unique_ptr<VersionClass> biosVersion;
 #endif
+
+    /** @brief Persistent Lid D-Bus object*/
+    std::unique_ptr<LidClass> lidClass;
 
     /** @brief Get the slot number of running image */
     void getRunningSlot();
