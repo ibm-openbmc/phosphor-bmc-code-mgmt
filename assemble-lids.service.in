@@ -1,0 +1,8 @@
+[Unit]
+Description=Assemble code update image
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/usr/bin/gen-lids-image-tar
+
