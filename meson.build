@@ -84,7 +84,8 @@ image_updater_sources = files(
     'bmc/serialize.cpp',
     'bmc/version.cpp',
     'bmc/utils.cpp',
-    'bmc/msl_verify.cpp'
+    'bmc/msl_verify.cpp',
+    'bmc/lid.cpp'
 )
 
 build_tests = get_option('tests')
