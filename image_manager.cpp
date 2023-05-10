@@ -46,8 +46,7 @@ struct RemovablePath
 {
     fs::path path;
 
-    explicit RemovablePath(const fs::path& path) : path(path)
-    {}
+    explicit RemovablePath(const fs::path& path) : path(path) {}
     ~RemovablePath()
     {
         if (!path.empty())
@@ -155,8 +154,8 @@ int Manager::processImage(const std::string& tarFilePath)
     }
 
     // Get machine name for image to be upgraded
-    std::string machineStr =
-        Version::getValue(manifestPath.string(), "MachineName");
+    std::string machineStr = Version::getValue(manifestPath.string(),
+                                               "MachineName");
     if (!machineStr.empty())
     {
         if (machineStr != currMachine)
@@ -201,8 +200,8 @@ int Manager::processImage(const std::string& tarFilePath)
     auto purpose = convertedPurpose.value_or(Version::VersionPurpose::Unknown);
 
     // Get ExtendedVersion
-    std::string extendedVersion =
-        Version::getValue(manifestPath.string(), "ExtendedVersion");
+    std::string extendedVersion = Version::getValue(manifestPath.string(),
+                                                    "ExtendedVersion");
 
     // Get the running Extended Version
     std::string currExtendedVersion =
@@ -253,8 +252,8 @@ int Manager::processImage(const std::string& tarFilePath)
     // active versions on D-Bus that is not managed by this service.
     // So check D-Bus if there is an existing version.
     auto allSoftwareObjs = getSoftwareObjects(bus);
-    auto it =
-        std::find(allSoftwareObjs.begin(), allSoftwareObjs.end(), objPath);
+    auto it = std::find(allSoftwareObjs.begin(), allSoftwareObjs.end(),
+                        objPath);
     if (versions.find(id) == versions.end() && it == allSoftwareObjs.end())
     {
         // Rename the temp dir to image dir

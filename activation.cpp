@@ -147,8 +147,8 @@ auto Activation::activation(Activations value) -> Activations
 
         if (!activationProgress)
         {
-            activationProgress =
-                std::make_unique<ActivationProgress>(bus, path);
+            activationProgress = std::make_unique<ActivationProgress>(bus,
+                                                                      path);
         }
 
         if (!activationBlocksTransition)
@@ -223,8 +223,8 @@ void Activation::onFlashWriteSuccess()
 
     if (!redundancyPriority)
     {
-        redundancyPriority =
-            std::make_unique<RedundancyPriority>(bus, path, *this, 0);
+        redundancyPriority = std::make_unique<RedundancyPriority>(bus, path,
+                                                                  *this, 0);
     }
 
     // Remove version object from image manager
@@ -407,7 +407,6 @@ bool Activation::checkApplyTimeImmediate()
     }
     else
     {
-
         auto method = bus.new_method_call(service.c_str(), applyTimeObjPath,
                                           dbusPropIntf, "Get");
         method.append(applyTimeIntf, applyTimeProp);
