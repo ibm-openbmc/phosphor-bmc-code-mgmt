@@ -20,7 +20,6 @@ namespace sdbusRule = sdbusplus::bus::match::rules;
 
 class Lid : public LidInherit
 {
-
   public:
     Lid(sdbusplus::bus_t& bus, const char* path) :
         LidInherit(bus, path), bus(bus),

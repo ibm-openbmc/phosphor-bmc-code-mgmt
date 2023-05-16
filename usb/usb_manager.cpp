@@ -207,7 +207,7 @@ void USBManager::listenActivationState(const std::string& path)
             MatchRules::propertiesChanged(
                 path, "xyz.openbmc_project.Software.Activation"),
             [this](sdbusplus::message::message& msg) {
-                activationChangeEvent(msg);
+        activationChangeEvent(msg);
             });
 }
 
