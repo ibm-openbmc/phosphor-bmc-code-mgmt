@@ -43,6 +43,10 @@ rm -fr $TAR_IMAGE_PATH
 echo "Executing tar -cf $TAR_IMAGE_PATH . -C $UPDATE_DIR_PATH"
 tar -cf $TAR_IMAGE_PATH . -C $UPDATE_DIR_PATH
 
+#Create a temporary file to indicate that the update is am inband code update, this is required during activation
+#as the UAK verification is already done.
+touch /tmp/inband-update
+
 #Copy the tarball to the update directory to trigger the phosphor software manager to create a version interface
 cp $TAR_IMAGE_PATH $UPDATE_IMAGE_PATH
 
