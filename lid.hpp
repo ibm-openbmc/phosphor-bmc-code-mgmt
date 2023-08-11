@@ -15,6 +15,7 @@ namespace manager
 {
 
 static constexpr uint32_t markerAdfFippSig = 0x46495050; // "FIPP"
+static constexpr uint32_t markerAdfSpnmSig = 0x53504E4D; // "SPNM"
 static constexpr uint32_t hiperSPFlag = 0x40000000;
 using LidInherit = sdbusplus::server::object_t<
     sdbusplus::xyz::openbmc_project::Software::server::LID>;
