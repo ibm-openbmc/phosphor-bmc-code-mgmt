@@ -19,8 +19,6 @@ using namespace phosphor::logging;
 using InternalFailure =
     sdbusplus::xyz::openbmc_project::Common::Error::InternalFailure;
 
-constexpr auto resetFile = "/tmp/reset-msl";
-
 int minimum_ship_level::compare(const Version& versionToCompare,
                                 const Version& mslVersion)
 {
@@ -133,9 +131,9 @@ bool minimum_ship_level::verify(const std::string& versionManifest)
             "BMC Minimum Ship Level ({MIN_VERSION}) NOT met by {ACTUAL_VERSION}",
             "MIN_VERSION", msl, "ACTUAL_VERSION", tmpStr, "VERSION_PURPOSE",
             purpose);
-        report<IncompatibleErr>(Incompatible::MIN_VERSION(msl.c_str()),
-                                Incompatible::ACTUAL_VERSION(tmpStr.c_str()),
-                                Incompatible::VERSION_PURPOSE(purpose.c_str()));
+        elog<IncompatibleErr>(Incompatible::MIN_VERSION(msl.c_str()),
+                              Incompatible::ACTUAL_VERSION(tmpStr.c_str()),
+                              Incompatible::VERSION_PURPOSE(purpose.c_str()));
         return false;
     }
 
