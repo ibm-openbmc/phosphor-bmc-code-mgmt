@@ -2,6 +2,7 @@
 
 #include "lid.hpp"
 
+#include "msl_verify.hpp"
 #include "utils.hpp"
 #include "version.hpp"
 
@@ -14,6 +15,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <regex>
 #include <string>
 
 #ifdef WANT_ACCESS_KEY_VERIFY
@@ -31,14 +33,12 @@ using VersionClass = phosphor::software::manager::Version;
 PHOSPHOR_LOG2_USING;
 using namespace phosphor::logging;
 using namespace sdbusplus::xyz::openbmc_project::Software::Image::Error;
-using namespace phosphor::software::image;
 namespace Software = phosphor::logging::xyz::openbmc_project::Software;
 namespace fs = std::filesystem;
 using VersionClass = phosphor::software::manager::Version;
 
 void Lid::validate(std::string filePath)
 {
-#ifdef WANT_ACCESS_KEY_VERIFY
     struct markerLid
     {
         uint32_t versionId;
@@ -60,6 +60,12 @@ void Lid::validate(std::string filePath)
 
     typedef struct
     {
+        uint32_t offset;
+        uint32_t size;
+    } markerSpnmAdfHeader_t;
+
+    typedef struct
+    {
         uint32_t SPFlagsOffset;
         uint32_t SPFlagsSize;
         uint32_t SPDateOffset;
@@ -76,15 +82,10 @@ void Lid::validate(std::string filePath)
     std::ifstream efile(filePath, std::ios::in | std::ios::binary);
     efile.read(reinterpret_cast<char*>(&ml), sizeof(ml));
 
-    using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
-    UpdateAccessKey updateAccessKey("");
     uint32_t offBuff = htonl(ml.offsetToAdditionalDataFields);
     uint32_t adfCount;
     uint32_t adfSize;
     uint32_t adfSignature;
-    markerFwIPAdfHeader_t markerFippAdfHeader;
-    std::string gaDate{};
-    std::string version{};
 
     // Read the total number of ADFs present in the Marker LID file
     efile.seekg(offBuff, efile.beg);
@@ -93,6 +94,9 @@ void Lid::validate(std::string filePath)
     // Loop through the ADFs to find respective ADF
     for (uint8_t i = 0; i < htonl(adfCount); i++)
     {
+        // Store the offset, this is the beginning of an ADF section
+        auto adfStartOffset = efile.tellg();
+
         // Read the Size of ADF
         efile.read(reinterpret_cast<char*>(&adfSize), sizeof(adfSize));
 
@@ -100,10 +104,67 @@ void Lid::validate(std::string filePath)
         efile.read(reinterpret_cast<char*>(&adfSignature),
                    sizeof(adfSignature));
 
-        // If the ADF is FIPP aka the firmware IP ADF
-        if (htonl(adfSignature) == markerAdfFippSig)
+        // If the ADF is SPNM aka the firmware version name
+        if (htonl(adfSignature) == markerAdfSpnmSig)
         {
+            // The version name in the marker lid has a format FWXXXX.YY. The
+            // minimum ship level check expects a version format fwXXXX.YY-ZZ,
+            // where ZZ is the revision information. The missing revision has
+            // the following implications:
+            // 1. Need to build the version string to match the msl format by
+            // replacing the initial 2 upper case characters with lower case,
+            // and appending a revision number to the string. Choose 99 so that
+            // it's higher than any revision set as the minimum ship level.
+            // 2. The msl verification function sets the msl value to the
+            // provided version string if the reset msl file exists. Therefore,
+            // skip the msl verification if the reset msl file exists because
+            // we don't want the new msl version to be set to the arbitrary
+            // revision of -99.
+            if (!std::filesystem::exists(minimum_ship_level::resetFile))
+            {
+                markerSpnmAdfHeader_t markerSpnmAdfHeader;
+                efile.read(reinterpret_cast<char*>(&markerSpnmAdfHeader),
+                           sizeof(markerSpnmAdfHeader));
+
+                // Seek to the beginning of the SPNM ADF
+                efile.seekg(adfStartOffset, efile.beg);
+
+                // Read the SPNM version name of format FWXXXX.YY
+                efile.seekg(htonl(markerSpnmAdfHeader.offset), efile.cur);
+                char spnmName[10];
+                efile.read(spnmName, sizeof(spnmName));
+                // Terminate with NULL to avoid garbage in the string
+                spnmName[9] = '\0';
+
+                std::string version("fw");
+                version.append(spnmName + 2);
+                version.append("-99");
+
+                // Only call the msl verification if the built string matches
+                // the expected format.
+                std::string mslRegex{REGEX_BMC_MSL};
+                if (!mslRegex.empty())
+                {
+                    std::smatch match;
+                    std::regex rx{mslRegex, std::regex::extended};
+                    if (std::regex_search(version, match, rx))
+                    {
+                        minimum_ship_level::verify(version);
+                    }
+                }
+            }
+        }
+        // If the ADF is FIPP aka the firmware IP ADF
+        else if (htonl(adfSignature) == markerAdfFippSig)
+        {
+#ifdef WANT_ACCESS_KEY_VERIFY
+            using namespace phosphor::software::image;
+            using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
+            UpdateAccessKey updateAccessKey("");
+            markerFwIPAdfHeader_t markerFippAdfHeader;
             fippAdfData_t fippData;
+            std::string gaDate{};
+            std::string version{};
 
             // Read the ADF header into markerFippAdfHeader structure
             efile.read(reinterpret_cast<char*>(&markerFippAdfHeader),
@@ -129,17 +190,12 @@ void Lid::validate(std::string filePath)
             // Calling the UAK verify method
             updateAccessKey.verify(gaDate, version, isHiper);
             isHiper = false;
-            break;
-        }
-        else
-        {
-            // seek to the next ADF in the Marker LID
-            uint32_t nextADFOff = htonl(adfSize) - sizeof(adfSize) -
-                                  sizeof(adfSignature);
-            efile.seekg(nextADFOff, efile.cur);
-        }
-    }
 #endif
+        }
+        // seek to the next ADF in the Marker LID
+        adfStartOffset += htonl(adfSize);
+        efile.seekg(adfStartOffset, efile.beg);
+    }
     return;
 }
 
