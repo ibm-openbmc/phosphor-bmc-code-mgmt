@@ -3,6 +3,7 @@
 #include "uak_verify.hpp"
 
 #include "utils.hpp"
+#include "version.hpp"
 
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <phosphor-logging/elog-errors.hpp>
@@ -27,6 +28,12 @@ namespace image
 {
 PHOSPHOR_LOG2_USING;
 
+using namespace phosphor::logging;
+using VersionClass = phosphor::software::manager::Version;
+using AccessKeyErr =
+    sdbusplus::xyz::openbmc_project::Software::Version::Error::ExpiredAccessKey;
+using ExpiredAccessKey =
+    xyz::openbmc_project::Software::Version::ExpiredAccessKey;
 std::string UpdateAccessKey::getUpdateAccessExpirationDate(
     const std::string& objectPath)
 {
@@ -84,64 +91,14 @@ void UpdateAccessKey::writeUpdateAccessExpirationDate(
     }
 }
 
-std::string UpdateAccessKey::getBuildID()
-{
-    std::string buildIDKey = "BuildId";
-    std::string buildIDValue{};
-    std::string buildID{};
-
-    std::ifstream efile(manifestPath);
-    std::string line;
-
-    while (getline(efile, line))
-    {
-        if (line.substr(0, buildIDKey.size()).find(buildIDKey) !=
-            std::string::npos)
-        {
-            buildIDValue = line.substr(buildIDKey.size());
-            std::size_t pos = buildIDValue.find_first_of('=') + 1;
-            buildID = buildIDValue.substr(pos);
-            break;
-        }
-    }
-    efile.close();
-
-    if (buildID.empty())
-    {
-        error("BMC build id is empty");
-    }
-
-    return buildID;
-}
-
-bool UpdateAccessKey::verify()
+bool UpdateAccessKey::checkIfUAKValid(const std::string& buildID)
 {
     constexpr auto motherboardObjectPath =
         "/xyz/openbmc_project/inventory/system/chassis/motherboard";
-    std::string expirationDate{};
-    std::string buildID{};
-    buildID = getBuildID();
     expirationDate = getUpdateAccessExpirationDate(motherboardObjectPath);
-
     // Ensure that BUILD_ID date is in the YYYYMMDD format but truncating the
     // string to a length of 8 characters--excluding build's time information.
-    std::string buildIDTrunc = buildID.substr(0, 8);
-
-    // If BuildID value is the designated value of 00000000, that means the
-    // image being updated is an emergency service pack and should bypass the
-    // UAK check.
-
-    if (buildIDTrunc == "00000000")
-    {
-        debug("Access Key valid. BMC will begin activating.");
-        return true;
-    }
-
-    using namespace phosphor::logging;
-    using AccessKeyErr = sdbusplus::xyz::openbmc_project::Software::Version::
-        Error::ExpiredAccessKey;
-    using ExpiredAccessKey =
-        xyz::openbmc_project::Software::Version::ExpiredAccessKey;
+    buildIDTrunc = buildID.substr(0, 8);
 
     try
     {
@@ -159,8 +116,6 @@ bool UpdateAccessKey::verify()
             "Update Access Key validation failed. Expiration Date: {EXP_DATE}. "
             "Build date: {BUILD_ID}.",
             "EXP_DATE", expirationDate, "BUILD_ID", buildIDTrunc);
-        report<AccessKeyErr>(ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
-                             ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
         return false;
     }
     catch (...)
@@ -169,10 +124,38 @@ bool UpdateAccessKey::verify()
             "Update Access Key validation failed. Expiration Date: {EXP_DATE}. "
             "Build date: {BUILD_ID}.",
             "EXP_DATE", expirationDate, "BUILD_ID", buildIDTrunc);
-        report<AccessKeyErr>(ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
-                             ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
+        return false;
     }
-    return false;
+}
+bool UpdateAccessKey::verify(const std::string& gaDate,
+                             const std::string& version, bool isHiper)
+{
+    std::string expirationDate{};
+    std::string buildID{};
+    buildID = gaDate;
+
+    if (!checkIfUAKValid(buildID))
+    {
+        std::string versionID = VersionClass::getBMCVersion(OS_RELEASE_FILE);
+        // skip the first two characters to get the GA level
+        std::string currVersion = versionID.substr(2, 4);
+        if (isHiper && (version.compare(currVersion) == 0))
+        {
+            return true;
+        }
+        else
+        {
+            error(
+                "Update Access Key validation failed. Expiration Date: {EXP_DATE}. "
+                "Build date: {BUILD_ID}.",
+                "EXP_DATE", expirationDate, "BUILD_ID", buildIDTrunc);
+            elog<AccessKeyErr>(
+                ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
+                ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
+            return false;
+        }
+    }
+    return true;
 }
 
 void UpdateAccessKey::sync()
