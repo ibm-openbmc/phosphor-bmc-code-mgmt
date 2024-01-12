@@ -19,6 +19,12 @@
 #include "image_verify.hpp"
 #endif
 
+#ifdef WANT_ACCESS_KEY_VERIFY
+#include "uak_verify.hpp"
+#endif
+
+extern boost::asio::io_context& getIOContext();
+
 namespace phosphor
 {
 namespace software
@@ -101,6 +107,8 @@ auto Activation::activation(Activations value) -> Activations
         if (!updateAccessKey.verify())
         {
             utils::createBmcDump(bus);
+            error("Update Access Key validation failed.");
+            report<InternalFailure>();
             if (parent.control::FieldMode::fieldModeEnabled())
             {
                 return softwareServer::Activation::activation(
