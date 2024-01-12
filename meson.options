@@ -112,6 +112,8 @@ option(
     value: 'enabled',
     description: 'Enable TPM software update support.',
 )
+option('verify-update-access-key', type: 'feature', value: 'enabled',
+    description: 'Enabled access key validation.')
 
 # Variables
 option(

@@ -53,6 +53,7 @@ conf.set('MMC_LAYOUT', get_option('bmc-layout').contains('mmc'))
 # Configurable features
 conf.set('HOST_BIOS_UPGRADE', get_option('host-bios-upgrade').allowed())
 conf.set('WANT_SIGNATURE_VERIFY', get_option('verify-signature').allowed())
+conf.set('WANT_ACCESS_KEY_VERIFY', get_option('verify-update-access-key').allowed())
 conf.set(
     'START_UPDATE_DBUS_INTEFACE',
     get_option('software-update-dbus-interface').allowed(),
@@ -191,6 +192,12 @@ if (get_option('verify-signature').allowed())
         'image_verify.cpp',
         'openssl_alloc.cpp',
         'utils.cpp',
+    )
+endif
+
+if (get_option('verify-update-access-key').allowed())
+    image_updater_sources += files(
+        'uak_verify.cpp'
     )
 endif
 
