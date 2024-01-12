@@ -5,8 +5,11 @@
 #include "utils.hpp"
 
 #include <boost/date_time/gregorian/gregorian.hpp>
+#include <phosphor-logging/elog-errors.hpp>
+#include <phosphor-logging/elog.hpp>
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/server.hpp>
+#include <xyz/openbmc_project/Software/Version/error.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -124,6 +127,12 @@ bool UpdateAccessKey::verify()
     // string to a length of 8 characters--excluding build's time information.
     std::string buildIDTrunc = buildID.substr(0, 8);
 
+    using namespace phosphor::logging;
+    using AccessKeyErr = sdbusplus::xyz::openbmc_project::Software::Version::
+        Error::ExpiredAccessKey;
+    using ExpiredAccessKey =
+        xyz::openbmc_project::Software::Version::ExpiredAccessKey;
+
     try
     {
         boost::gregorian::date bd_date(
@@ -140,6 +149,8 @@ bool UpdateAccessKey::verify()
             "Update Access Key validation failed. Expiration Date: {EXP_DATE}. "
             "Build date: {BUILD_ID}.",
             "EXP_DATE", expirationDate, "BUILD_ID", buildIDTrunc);
+        report<AccessKeyErr>(ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
+                             ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
         return false;
     }
     catch (...)
@@ -148,6 +159,8 @@ bool UpdateAccessKey::verify()
             "Update Access Key validation failed. Expiration Date: {EXP_DATE}. "
             "Build date: {BUILD_ID}.",
             "EXP_DATE", expirationDate, "BUILD_ID", buildIDTrunc);
+        report<AccessKeyErr>(ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
+                             ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
     }
     return false;
 }
