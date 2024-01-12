@@ -6,6 +6,8 @@
 namespace minimum_ship_level
 {
 
+constexpr auto resetFile = "/tmp/reset-msl";
+
 /** @brief Version components */
 struct Version
 {
@@ -37,5 +39,24 @@ void parse(const std::string& versionStr, Version& version);
  *         -1 if a < b
  */
 int compare(const Version& a, const Version& b);
+
+/** @brief Read the Min Ship Level from VPD */
+std::string readSystemKeyword();
+
+/** @brief Write the Min Ship Level to VPD */
+void writeSystemKeyword(const std::string& value);
+
+/** @brief Set the minimum ship level in VPD to the current version if it
+ *         matches the format of the msl regex, or to a predefined value
+ *         otherwise.
+ */
+void set();
+
+/** @brief Create a file to indicate the subsequent code update process to set
+ *         the minimum ship level to the image version used for the update.
+ *         Default this value to the GA level in case the image version does not
+ *         match the regex format.
+ */
+void reset();
 
 } // namespace minimum_ship_level

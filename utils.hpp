@@ -9,6 +9,10 @@
 namespace utils
 {
 
+using Path = std::string;
+using Service = std::string;
+using Interfaces = std::vector<std::string>;
+using SubTreeResponse = std::map<Path, std::map<Service, Interfaces>>;
 using PropertyValue = std::variant<std::string>;
 
 /**
@@ -66,6 +70,20 @@ void setProperty(sdbusplus::bus_t& bus, const std::string& objectPath,
                  const PropertyValue& value);
 
 /**
+ * @brief Get the Subtree response from the mapper
+ *
+ *  @param[in] bus       - bus handler
+ *  @param[in] interface - Interface in the subtree to search for
+ *
+ *  @return SubTreeResponse - Map of object paths to a map of service names to
+ * their interfaces.
+ *
+ *  @throw sdbusplus::exception::exception when it fails
+ */
+SubTreeResponse getSubTree(sdbusplus::bus::bus& bus,
+                           const std::string& interface);
+
+/**
  * @brief Merge more files
  *
  * @param[in] srcFiles - source files
@@ -74,6 +92,33 @@ void setProperty(sdbusplus::bus_t& bus, const std::string& objectPath,
  **/
 void mergeFiles(const std::vector<std::string>& srcFiles,
                 const std::string& dstFile);
+
+/**
+ * @brief Call phosphor-dump-manager to create BMC user dump
+ *
+ * @param[in] bus
+ **/
+
+void createBmcDump(sdbusplus::bus::bus& bus);
+
+/**
+ * @brief subscribe to the systemd signals
+ *
+ * This object needs to capture when it's systemd targets complete
+ * so it can keep it's state updated
+ *
+ */
+void subscribeToSystemdSignals(sdbusplus::bus::bus& bus);
+
+/**
+ * @brief unsubscribe from the systemd signals
+ *
+ * systemd signals are only of interest during the activation process.
+ * Once complete, we want to unsubscribe to avoid unnecessary calls of
+ * unitStateChange().
+ *
+ */
+void unsubscribeFromSystemdSignals(sdbusplus::bus::bus& bus);
 
 namespace internal
 {

@@ -58,6 +58,18 @@ void setProperty(sdbusplus::bus_t& bus, const std::string& objectPath,
     bus.call_noreply(method);
 }
 
+SubTreeResponse getSubTree(sdbusplus::bus::bus& bus,
+                           const std::string& interface)
+{
+    auto method = bus.new_method_call(MAPPER_BUSNAME, MAPPER_PATH,
+                                      MAPPER_INTERFACE, "GetSubTree");
+    method.append("/", 0, std::vector<std::string>({interface}));
+    auto reply = bus.call(method);
+    SubTreeResponse response;
+    reply.read(response);
+    return response;
+}
+
 void mergeFiles(const std::vector<std::string>& srcFiles,
                 const std::string& dstFile)
 {
@@ -82,6 +94,63 @@ void mergeFiles(const std::vector<std::string>& srcFiles,
         inFile.close();
     }
     outFile.close();
+}
+
+void createBmcDump(sdbusplus::bus::bus& bus)
+{
+    auto method = bus.new_method_call(
+        "xyz.openbmc_project.Dump.Manager", "/xyz/openbmc_project/dump/bmc",
+        "xyz.openbmc_project.Dump.Create", "CreateDump");
+    method.append(
+        std::vector<
+            std::pair<std::string, std::variant<std::string, uint64_t>>>());
+    try
+    {
+        bus.call_noreply(method);
+    }
+    catch (const sdbusplus::exception::exception& e)
+    {
+        error("Failed to create BMC dump, exception:{ERROR}", "ERROR", e);
+    }
+}
+
+void subscribeToSystemdSignals(sdbusplus::bus::bus& bus)
+{
+    try
+    {
+        auto method = bus.new_method_call(SYSTEMD_BUSNAME, SYSTEMD_PATH,
+                                          SYSTEMD_INTERFACE, "Subscribe");
+        bus.call_noreply(method);
+    }
+    catch (const sdbusplus::exception_t& e)
+    {
+        if (e.name() != nullptr &&
+            strcmp("org.freedesktop.systemd1.AlreadySubscribed", e.name()) == 0)
+        {
+            // If an Activation attempt fails, the Unsubscribe method is not
+            // called. This may lead to an AlreadySubscribed error if the
+            // Activation is re-attempted.
+            info("Already subscribed to systemd signals: {ERROR}", "ERROR", e);
+        }
+        else
+        {
+            error("Error subscribing to systemd: {ERROR}", "ERROR", e);
+        }
+    }
+}
+
+void unsubscribeFromSystemdSignals(sdbusplus::bus::bus& bus)
+{
+    try
+    {
+        auto method = bus.new_method_call(SYSTEMD_BUSNAME, SYSTEMD_PATH,
+                                          SYSTEMD_INTERFACE, "Unsubscribe");
+        bus.call_noreply(method);
+    }
+    catch (const sdbusplus::exception_t& e)
+    {
+        error("Error unsubscribing from systemd signals: {ERROR}", "ERROR", e);
+    }
 }
 
 namespace internal
