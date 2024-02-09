@@ -119,7 +119,7 @@ auto Activation::activation(Activations value) -> Activations
 
             // The release version is expected to be in the format of XXYYYY
             // where YYYY is the release version, Ex: fw1050
-            std::string currVersion = versionID.substr(2, 4);
+            std::string currVersion = versionID.substr(2, 7);
 
             std::string buildID{};
             std::size_t pos;
@@ -132,7 +132,7 @@ auto Activation::activation(Activations value) -> Activations
 
             if (std::regex_match(buildID, pattern))
             {
-                isHiper = true;
+                isOneOff = true;
                 pos = buildID.find_first_of("-") + 1;
                 buildID = buildID.substr(pos);
             }
@@ -141,7 +141,7 @@ auto Activation::activation(Activations value) -> Activations
 
             try
             {
-                if (!updateAccessKey.verify(buildID, currVersion, isHiper))
+                if (!updateAccessKey.verify(buildID, currVersion, isOneOff))
                 {
                     utils::createBmcDump(bus);
                     if (parent.control::FieldMode::fieldModeEnabled())
