@@ -128,7 +128,7 @@ bool UpdateAccessKey::checkIfUAKValid(const std::string& buildID)
     }
 }
 bool UpdateAccessKey::verify(const std::string& gaDate,
-                             const std::string& version, bool isHiper)
+                             const std::string& version, bool isOneOff)
 {
     std::string expirationDate{};
     std::string buildID{};
@@ -136,23 +136,52 @@ bool UpdateAccessKey::verify(const std::string& gaDate,
 
     if (!checkIfUAKValid(buildID))
     {
-        std::string versionID = VersionClass::getBMCVersion(OS_RELEASE_FILE);
-        // skip the first two characters to get the GA level
-        std::string currVersion = versionID.substr(2, 4);
-        if (isHiper && (version.compare(currVersion) == 0))
+        try
         {
-            return true;
+            if (version.empty())
+            {
+                return false;
+            }
+            std::string versionID =
+                VersionClass::getBMCVersion(OS_RELEASE_FILE);
+            // skip the first two characters to get the GA level
+            std::string currVersion = versionID.substr(2, 7);
+            size_t dotPosition = currVersion.find('.');
+
+            std::string currMajorVersion = currVersion.substr(0, dotPosition);
+            int currentMajorVersion = stoi(currMajorVersion);
+
+            std::string currMinorVersion = currVersion.substr(dotPosition + 1);
+            int currentMinorVersion = stoi(currMinorVersion);
+
+            dotPosition = version.find('.');
+            std::string tarMajorVersion = version.substr(0, dotPosition);
+            int targetMajorVersion = stoi(tarMajorVersion);
+
+            std::string tarMinorVersion = version.substr(dotPosition + 1);
+            int targetMinorVersion = stoi(tarMinorVersion);
+
+            if (((targetMajorVersion == currentMajorVersion) &&
+                 (targetMinorVersion <= currentMinorVersion)) ||
+                isOneOff || (targetMajorVersion < currentMajorVersion))
+            {
+                return true;
+            }
+            else
+            {
+                error(
+                    "Update Access Key validation failed. Expiration Date: {EXP_DATE}. "
+                    "Build date: {BUILD_ID}.",
+                    "EXP_DATE", expirationDate, "BUILD_ID", buildIDTrunc);
+                elog<AccessKeyErr>(
+                    ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
+                    ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
+                return false;
+            }
         }
-        else
+        catch (const std::invalid_argument& e)
         {
-            error(
-                "Update Access Key validation failed. Expiration Date: {EXP_DATE}. "
-                "Build date: {BUILD_ID}.",
-                "EXP_DATE", expirationDate, "BUILD_ID", buildIDTrunc);
-            elog<AccessKeyErr>(
-                ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
-                ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
-            return false;
+            std::cerr << "Invalid argument: " << e.what() << std::endl;
         }
     }
     return true;
