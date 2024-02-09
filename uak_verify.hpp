@@ -40,12 +40,13 @@ class UpdateAccessKey
      *
      *  @param[in] gaDate - the GA date of the service pack
      *  @param[in] version - version/G level of the service pack
-     *  @param[in] isHiper - flag to indicate if the SP is a HIPER service pack
+     *  @param[in] isOneOff - flag to indicate if the SP is a One Off service
+     *  pack
      *
      *  @return true if the verification succeeded, false otherwise
      */
     bool verify(const std::string& gaDate, const std::string& version,
-                bool isHiper);
+                bool isOneOff);
 
     /** @brief Syncs the update access key found in VPD and flash memory */
     void sync();
