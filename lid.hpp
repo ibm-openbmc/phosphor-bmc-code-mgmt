@@ -16,7 +16,7 @@ namespace manager
 
 static constexpr uint32_t markerAdfFippSig = 0x46495050; // "FIPP"
 static constexpr uint32_t markerAdfSpnmSig = 0x53504E4D; // "SPNM"
-static constexpr uint32_t hiperSPFlag = 0x40000000;
+static constexpr uint32_t oneOffSPFlag = 0x80000000;
 using LidInherit = sdbusplus::server::object_t<
     sdbusplus::xyz::openbmc_project::Software::server::LID>;
 namespace sdbusRule = sdbusplus::bus::match::rules;
@@ -49,7 +49,8 @@ class Lid : public LidInherit
     void assembleCodeUpdateImage();
 
   private:
-    bool isHiper = false;
+    std::string fwVersion;
+    bool isOneOff = false;
 
     sdbusplus::bus_t& bus;
     /** @brief Used to subscribe to dbus systemd signals **/

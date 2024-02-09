@@ -107,6 +107,21 @@ void Lid::validate(std::string filePath)
         // If the ADF is SPNM aka the firmware version name
         if (htonl(adfSignature) == markerAdfSpnmSig)
         {
+            markerSpnmAdfHeader_t markerSpnmAdfHeader;
+            efile.read(reinterpret_cast<char*>(&markerSpnmAdfHeader),
+                       sizeof(markerSpnmAdfHeader));
+
+            // Seek to the beginning of the SPNM ADF
+            efile.seekg(adfStartOffset, efile.beg);
+
+            // Read the SPNM version name of format FWXXXX.YY
+            efile.seekg(htonl(markerSpnmAdfHeader.offset), efile.cur);
+            char spnmName[10];
+            // Terminate with NULL to avoid garbage in the string
+            spnmName[9] = '\0';
+            efile.read(spnmName, sizeof(spnmName));
+            fwVersion.append(spnmName);
+
             // The version name in the marker lid has a format FWXXXX.YY. The
             // minimum ship level check expects a version format fwXXXX.YY-ZZ,
             // where ZZ is the revision information. The missing revision has
@@ -122,20 +137,6 @@ void Lid::validate(std::string filePath)
             // revision of -99.
             if (!std::filesystem::exists(minimum_ship_level::resetFile))
             {
-                markerSpnmAdfHeader_t markerSpnmAdfHeader;
-                efile.read(reinterpret_cast<char*>(&markerSpnmAdfHeader),
-                           sizeof(markerSpnmAdfHeader));
-
-                // Seek to the beginning of the SPNM ADF
-                efile.seekg(adfStartOffset, efile.beg);
-
-                // Read the SPNM version name of format FWXXXX.YY
-                efile.seekg(htonl(markerSpnmAdfHeader.offset), efile.cur);
-                char spnmName[10];
-                efile.read(spnmName, sizeof(spnmName));
-                // Terminate with NULL to avoid garbage in the string
-                spnmName[9] = '\0';
-
                 std::string version("fw");
                 version.append(spnmName + 2);
                 version.append("-99");
@@ -164,7 +165,7 @@ void Lid::validate(std::string filePath)
             markerFwIPAdfHeader_t markerFippAdfHeader;
             fippAdfData_t fippData;
             std::string gaDate{};
-            std::string version{};
+            std::string buildVersion{};
 
             // Read the ADF header into markerFippAdfHeader structure
             efile.read(reinterpret_cast<char*>(&markerFippAdfHeader),
@@ -179,17 +180,23 @@ void Lid::validate(std::string filePath)
             // released
             efile.read(fippData.SPDate, sizeof(fippData.SPDate));
 
-            if (htonl(fippData.SPFlags) == hiperSPFlag)
+            if (htonl(fippData.SPFlags) == oneOffSPFlag)
             {
-                isHiper = true;
+                isOneOff = true;
             }
 
             gaDate = fippData.SPDate;
 
-            version = std::string(&ml.miKeyword[2], &ml.miKeyword[6]);
             // Calling the UAK verify method
-            updateAccessKey.verify(gaDate, version, isHiper);
-            isHiper = false;
+            std::regex pattern(R"(FW(\d+\.\d{2}))");
+            std::smatch match;
+            if (std::regex_search(fwVersion, match, pattern))
+            {
+                buildVersion = match[1];
+            }
+
+            updateAccessKey.verify(gaDate, buildVersion, isOneOff);
+            isOneOff = false;
 #endif
         }
         // seek to the next ADF in the Marker LID
