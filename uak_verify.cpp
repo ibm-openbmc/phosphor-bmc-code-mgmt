@@ -153,6 +153,7 @@ bool UpdateAccessKey::verify(const std::string& gaDate,
 
             std::string currMinorVersion = currVersion.substr(dotPosition + 1);
             int currentMinorVersion = stoi(currMinorVersion);
+            int currentMinorVersionX = currentMinorVersion / 10;
 
             dotPosition = version.find('.');
             std::string tarMajorVersion = version.substr(0, dotPosition);
@@ -160,9 +161,10 @@ bool UpdateAccessKey::verify(const std::string& gaDate,
 
             std::string tarMinorVersion = version.substr(dotPosition + 1);
             int targetMinorVersion = stoi(tarMinorVersion);
+            int targetMinorVersionX = targetMinorVersion / 10;
 
             if (((targetMajorVersion == currentMajorVersion) &&
-                 (targetMinorVersion <= currentMinorVersion)) ||
+                 (targetMinorVersionX <= currentMinorVersionX)) ||
                 isOneOff || (targetMajorVersion < currentMajorVersion))
             {
                 return true;
