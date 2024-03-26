@@ -28,10 +28,25 @@ class UpdateAccessKey
     UpdateAccessKey(const fs::path& manifestPath) : manifestPath(manifestPath)
     {}
 
+    /** @brief Method to verify if the UAK of the service pack is valid
+     *
+     *  @param[in] buildID - build ID of the service pack
+     *
+     *  @return true if the UAK is valid
+     */
+    bool checkIfUAKValid(const std::string& buildID);
+
     /** @brief Verify if the current image BUILD_ID meet the access key criteria
+     *
+     *  @param[in] gaDate - the GA date of the service pack
+     *  @param[in] version - version/G level of the service pack
+     *  @param[in] isOneOff - flag to indicate if the SP is a One Off service
+     *  pack
+     *
      *  @return true if the verification succeeded, false otherwise
      */
-    bool verify();
+    bool verify(const std::string& gaDate, const std::string& version,
+                bool isOneOff);
 
     /** @brief Syncs the update access key found in VPD and flash memory */
     void sync();
@@ -51,13 +66,11 @@ class UpdateAccessKey
     void writeUpdateAccessExpirationDate(const std::string& date,
                                          const std::string& objectPath);
 
-    /** @brief Get the BMC build_id string from the manifest file
-     *  @return The build_id.
-     */
-    std::string getBuildID();
-
     /** @brief Manifest file path */
     fs::path manifestPath;
+
+    std::string buildIDTrunc{};
+    std::string expirationDate{};
 };
 
 } // namespace image

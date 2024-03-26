@@ -5,6 +5,8 @@
 namespace minimum_ship_level
 {
 
+constexpr auto resetFile = "/tmp/reset-msl";
+
 /** @brief Version components */
 struct Version
 {
