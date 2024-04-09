@@ -101,6 +101,25 @@ void mergeFiles(const std::vector<std::string>& srcFiles,
 
 void createBmcDump(sdbusplus::bus::bus& bus);
 
+/**
+ * @brief subscribe to the systemd signals
+ *
+ * This object needs to capture when it's systemd targets complete
+ * so it can keep it's state updated
+ *
+ */
+void subscribeToSystemdSignals(sdbusplus::bus::bus& bus);
+
+/**
+ * @brief unsubscribe from the systemd signals
+ *
+ * systemd signals are only of interest during the activation process.
+ * Once complete, we want to unsubscribe to avoid unnecessary calls of
+ * unitStateChange().
+ *
+ */
+void unsubscribeFromSystemdSignals(sdbusplus::bus::bus& bus);
+
 namespace internal
 {
 

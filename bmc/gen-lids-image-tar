@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -eo pipefail
+
+#Staging directory
+LID_STAGING_DIR="/var/lib/phosphor-software-manager/hostfw/staging"
+#Directory where the lid files without a header are stored
+LID_DIR_PATH=$LID_STAGING_DIR/"lid"
+#Directory where the image files are stored as they are built
+IMAGE_DIR_PATH=$LID_STAGING_DIR/"image"
+#Directory where the code update tarball files are stored
+UPDATE_DIR_PATH=$LID_STAGING_DIR/"update"
+#The file name of the code update tarball
+TAR_IMAGE_NAME="image.tar"
+#The file name of the hostfw image
+HOSTFW_IMAGE_NAME="image-hostfw"
+#The path to the hostfw image
+HOSTFW_IMAGE_PATH=$IMAGE_DIR_PATH/$HOSTFW_IMAGE_NAME
+#The path to the tarball file expected by the phosphor software manager
+UPDATE_IMAGE_PATH="/tmp/images/$TAR_IMAGE_NAME"
+#The path to the code update tarball file
+TAR_IMAGE_PATH=$IMAGE_DIR_PATH/$TAR_IMAGE_NAME
+
+#Create the hostfw squashfs image from the LID files without header
+
+echo Create the hostfw squashfs image from the LID files without header
+echo "Executing mksquashfs $LID_DIR_PATH $HOSTFW_IMAGE_PATH -all-root -no-recovery -no-xattrs -noI -mkfs-time 0 -all-time 0"
+
+mksquashfs $LID_DIR_PATH $HOSTFW_IMAGE_PATH -all-root -no-recovery -no-xattrs -noI -mkfs-time 0 -all-time 0
+
+mkdir $UPDATE_DIR_PATH
+
+#Extract the BMC tarball content
+echo "Executing tar -xf $TAR_IMAGE_PATH -C $UPDATE_DIR_PATH"
+tar -xf $TAR_IMAGE_PATH -C $UPDATE_DIR_PATH
+
+#Add the hostfw image to the directory where the contents were extracted
+cp $HOSTFW_IMAGE_PATH $UPDATE_DIR_PATH/$HOSTFW_IMAGE_NAME
+
+#Remove the tarball file, then re-generate it with so that the hostfw image becomes part of the tarball
+rm -fr $TAR_IMAGE_PATH
+
+echo "Executing tar -cf $TAR_IMAGE_PATH . -C $UPDATE_DIR_PATH"
+tar -cf $TAR_IMAGE_PATH . -C $UPDATE_DIR_PATH
+
+#Copy the tarball to the update directory to trigger the phosphor software manager to create a version interface
+cp $TAR_IMAGE_PATH $UPDATE_IMAGE_PATH
+
+#cleanup
+rm -fr UPDATE_DIR_PATH
+rm -fr LID_DIR_PATH
+rm -fr IMAGE_DIR_PATH
+

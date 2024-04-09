@@ -114,6 +114,45 @@ void createBmcDump(sdbusplus::bus::bus& bus)
     }
 }
 
+void subscribeToSystemdSignals(sdbusplus::bus::bus& bus)
+{
+    try
+    {
+        auto method = bus.new_method_call(SYSTEMD_BUSNAME, SYSTEMD_PATH,
+                                          SYSTEMD_INTERFACE, "Subscribe");
+        bus.call_noreply(method);
+    }
+    catch (const sdbusplus::exception_t& e)
+    {
+        if (e.name() != nullptr &&
+            strcmp("org.freedesktop.systemd1.AlreadySubscribed", e.name()) == 0)
+        {
+            // If an Activation attempt fails, the Unsubscribe method is not
+            // called. This may lead to an AlreadySubscribed error if the
+            // Activation is re-attempted.
+            info("Already subscribed to systemd signals: {ERROR}", "ERROR", e);
+        }
+        else
+        {
+            error("Error subscribing to systemd: {ERROR}", "ERROR", e);
+        }
+    }
+}
+
+void unsubscribeFromSystemdSignals(sdbusplus::bus::bus& bus)
+{
+    try
+    {
+        auto method = bus.new_method_call(SYSTEMD_BUSNAME, SYSTEMD_PATH,
+                                          SYSTEMD_INTERFACE, "Unsubscribe");
+        bus.call_noreply(method);
+    }
+    catch (const sdbusplus::exception_t& e)
+    {
+        error("Error unsubscribing from systemd signals: {ERROR}", "ERROR", e);
+    }
+}
+
 namespace internal
 {
 
