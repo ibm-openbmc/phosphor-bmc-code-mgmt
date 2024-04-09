@@ -41,6 +41,8 @@ using InternalFailure =
     sdbusplus::error::xyz::openbmc_project::common::InternalFailure;
 using AccessKeyErr =
     sdbusplus::error::xyz::openbmc_project::software::version::ExpiredAccessKey;
+using IncompatibleErr =
+    sdbusplus::error::xyz::openbmc_project::software::version::Incompatible;
 
 #ifdef WANT_SIGNATURE_VERIFY
 namespace control = sdbusplus::server::xyz::openbmc_project::control;
@@ -181,11 +183,28 @@ auto Activation::activation(Activations value) -> Activations
 
         auto versionStr = parent.versions.find(versionId)->second->version();
 
-        if (!minimum_ship_level::verify(versionStr))
+        // Perform minimum ship validation if this is not an inband update or if
+        // the reset msl has been requested since an inband update does not
+        // reset the msl value.
+        if ((!std::filesystem::exists("/tmp/inband-update")) ||
+            (std::filesystem::exists(minimum_ship_level::resetFile)))
         {
-            utils::createBmcDump(bus);
-            return softwareServer::Activation::activation(
-                softwareServer::Activation::Activations::Failed);
+            try
+            {
+                if (!minimum_ship_level::verify(versionStr))
+                {
+                    utils::createBmcDump(bus);
+                    return softwareServer::Activation::activation(
+                        softwareServer::Activation::Activations::Failed);
+                }
+            }
+            catch (IncompatibleErr& e)
+            {
+                commit<IncompatibleErr>();
+                utils::createBmcDump(bus);
+                return softwareServer::Activation::activation(
+                    softwareServer::Activation::Activations::Failed);
+            }
         }
 
         if (!activationProgress)
