@@ -152,6 +152,7 @@ unit_files = [
     'obmc-flash-bmc-setenv@.service.in',
     'reboot-guard-disable.service.in',
     'reboot-guard-enable.service.in',
+    'assemble-lids.service.in',
     'force-reboot.service.in',
     'usr-local.mount.in',
     'xyz.openbmc_project.Software.BMC.Updater.service.in',
@@ -313,6 +314,11 @@ executable(
 )
 
 install_data('obmc-flash-bmc',
+    install_mode: 'rwxr-xr-x',
+    install_dir: get_option('bindir')
+)
+
+install_data('gen-lids-image-tar',
     install_mode: 'rwxr-xr-x',
     install_dir: get_option('bindir')
 )
