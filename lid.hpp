@@ -14,6 +14,8 @@ namespace software
 namespace manager
 {
 
+static constexpr uint32_t markerAdfFippSig = 0x46495050; // "FIPP"
+static constexpr uint32_t hiperSPFlag = 0x40000000;
 using LidInherit = sdbusplus::server::object_t<
     sdbusplus::server::xyz::openbmc_project::software::LID>;
 namespace sdbusRule = sdbusplus::bus::match::rules;
@@ -35,6 +37,7 @@ class Lid : public LidInherit
     /**
      * @brief Validator for inband update
      *
+     * @param[in] filePath - file path to the Marker LID file
      */
     void validate(std::string filePath);
     /**
@@ -44,6 +47,8 @@ class Lid : public LidInherit
     void assembleCodeUpdateImage();
 
   private:
+    bool isHiper = false;
+
     sdbusplus::bus_t& bus;
     /** @brief Used to subscribe to dbus systemd signals **/
     sdbusplus::bus::match_t systemdSignals;
