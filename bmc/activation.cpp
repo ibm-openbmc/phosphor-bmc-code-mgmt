@@ -15,6 +15,7 @@
 #include <xyz/openbmc_project/Software/Image/error.hpp>
 #include <xyz/openbmc_project/Software/Version/error.hpp>
 
+#include <regex>
 #ifdef WANT_SIGNATURE_VERIFY
 #include "image_verify.hpp"
 #endif
@@ -38,6 +39,8 @@ PHOSPHOR_LOG2_USING;
 using namespace phosphor::logging;
 using InternalFailure =
     sdbusplus::error::xyz::openbmc_project::common::InternalFailure;
+using AccessKeyErr =
+    sdbusplus::error::xyz::openbmc_project::software::version::ExpiredAccessKey;
 
 #ifdef WANT_SIGNATURE_VERIFY
 namespace control = sdbusplus::server::xyz::openbmc_project::control;
@@ -100,21 +103,61 @@ auto Activation::activation(Activations value) -> Activations
     if (value == softwareServer::Activation::Activations::Activating)
     {
 #ifdef WANT_ACCESS_KEY_VERIFY
-        fs::path manifestPath(IMG_UPLOAD_DIR);
-        manifestPath /= (versionId + '/' + MANIFEST_FILE_NAME);
-
-        using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
-        UpdateAccessKey updateAccessKey(manifestPath);
-
-        updateAccessKey.sync();
-
-        if (!updateAccessKey.verify())
+        if (!std::filesystem::exists("/tmp/inband-update"))
         {
-            utils::createBmcDump(bus);
-            if (parent.control::FieldMode::fieldModeEnabled())
+            fs::path manifestPath(IMG_UPLOAD_DIR);
+            manifestPath /= (versionId + '/' + MANIFEST_FILE_NAME);
+
+            using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
+            UpdateAccessKey updateAccessKey(manifestPath);
+
+            using VersionClass = phosphor::software::manager::Version;
+            std::string versionID =
+                VersionClass::getValue(manifestPath.string(), "version");
+
+            // The release version is expected to be in the format of XXYYYY
+            // where YYYY is the release version, Ex: fw1050
+            std::string currVersion = versionID.substr(2, 4);
+
+            std::string buildID{};
+            std::size_t pos;
+            const std::regex pattern("\\d+-\\d+");
+            buildID = VersionClass::getValue(manifestPath.string(), "BuildId");
+            if (buildID.empty())
             {
-                return softwareServer::Activation::activation(
-                    softwareServer::Activation::Activations::Failed);
+                error("BMC build id is empty");
+            }
+
+            if (std::regex_match(buildID, pattern))
+            {
+                isHiper = true;
+                pos = buildID.find_first_of("-") + 1;
+                buildID = buildID.substr(pos);
+            }
+
+            updateAccessKey.sync();
+
+            try
+            {
+                if (!updateAccessKey.verify(buildID, currVersion, isHiper))
+                {
+                    utils::createBmcDump(bus);
+                    if (parent.control::FieldMode::fieldModeEnabled())
+                    {
+                        return softwareServer::Activation::activation(
+                            softwareServer::Activation::Activations::Failed);
+                    }
+                }
+            }
+            catch (AccessKeyErr& e)
+            {
+                commit<AccessKeyErr>();
+                utils::createBmcDump(bus);
+                if (parent.control::FieldMode::fieldModeEnabled())
+                {
+                    return softwareServer::Activation::activation(
+                        softwareServer::Activation::Activations::Failed);
+                }
             }
         }
 #endif
