@@ -261,6 +261,11 @@ install_data(
     install_dir: get_option('bindir'),
 )
 
+install_data('gen-lids-image-tar',
+    install_mode: 'rwxr-xr-x',
+    install_dir: get_option('bindir')
+)
+
 install_data(
     'detect-slot-aspeed',
     install_mode: 'rwxr-xr-x',
