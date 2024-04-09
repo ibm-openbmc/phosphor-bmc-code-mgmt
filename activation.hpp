@@ -356,6 +356,9 @@ class Activation : public ActivationInherit, public Flash
 
     /** @brief Called when image verification fails. */
     void onVerifyFailed();
+
+    /** @brief flag to indicate if service pack is HIPER*/
+    bool isHiper = false;
 #endif
 };
 
