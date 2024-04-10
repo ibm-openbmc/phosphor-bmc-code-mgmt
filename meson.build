@@ -68,6 +68,7 @@ conf.set('MMC_LAYOUT', get_option('bmc-layout').contains('mmc'))
 # Configurable features
 conf.set('HOST_BIOS_UPGRADE', get_option('host-bios-upgrade').allowed())
 conf.set('WANT_SIGNATURE_VERIFY', get_option('verify-signature').allowed())
+conf.set('WANT_ACCESS_KEY_VERIFY', get_option('verify-update-access-key').allowed())
 
 # Configurable variables
 conf.set('ACTIVE_BMC_MAX_ALLOWED', get_option('active-bmc-max-allowed'))
@@ -141,10 +142,17 @@ ssl = dependency('openssl')
 systemd = dependency('systemd')
 systemd_system_unit_dir = systemd.get_variable('systemdsystemunitdir')
 
+if cpp.has_header('CLI/CLI.hpp')
+    CLI11 = declare_dependency()
+else
+    CLI11 = dependency('CLI11')
+endif
+
 unit_files = [
     'obmc-flash-bmc-setenv@.service.in',
     'reboot-guard-disable.service.in',
     'reboot-guard-enable.service.in',
+    'assemble-lids.service.in',
     'force-reboot.service.in',
     'usr-local.mount.in',
     'xyz.openbmc_project.Software.BMC.Updater.service.in',
@@ -152,6 +160,12 @@ unit_files = [
     'xyz.openbmc_project.Software.Sync.service.in',
     'xyz.openbmc_project.Software.Version.service.in'
 ]
+
+if get_option('bmc-layout').contains('mmc')
+    unit_files += 'mmc/xyz.openbmc_project.Software.Version.service.in'
+else
+    unit_files += 'xyz.openbmc_project.Software.Version.service.in'
+endif
 
 image_updater_sources = files(
     'activation.cpp',
@@ -161,7 +175,8 @@ image_updater_sources = files(
     'serialize.cpp',
     'version.cpp',
     'utils.cpp',
-    'msl_verify.cpp'
+    'msl_verify.cpp',
+    'lid.cpp'
 )
 
 if get_option('bmc-layout').contains('static')
@@ -241,6 +256,12 @@ if (get_option('verify-signature').allowed())
     )
 endif
 
+if (get_option('verify-update-access-key').allowed())
+    image_updater_sources += files(
+        'uak_verify.cpp'
+    )
+endif
+
 executable(
     'phosphor-download-manager',
     'download_manager.cpp',
@@ -266,7 +287,22 @@ executable(
     install: true
 )
 
+executable(
+    'software-manager-tool',
+    'msl_verify.cpp',
+    'software_manager_tool.cpp',
+    'utils.cpp',
+    'version.cpp',
+    dependencies: [CLI11, deps, ssl],
+    install: true
+)
+
 install_data('obmc-flash-bmc',
+    install_mode: 'rwxr-xr-x',
+    install_dir: get_option('bindir')
+)
+
+install_data('gen-lids-image-tar',
     install_mode: 'rwxr-xr-x',
     install_dir: get_option('bindir')
 )

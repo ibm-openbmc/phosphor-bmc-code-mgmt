@@ -12,10 +12,16 @@
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/exception.hpp>
 #include <xyz/openbmc_project/Common/error.hpp>
+#include <xyz/openbmc_project/Software/Image/error.hpp>
 #include <xyz/openbmc_project/Software/Version/error.hpp>
 
+#include <regex>
 #ifdef WANT_SIGNATURE_VERIFY
 #include "image_verify.hpp"
+#endif
+
+#ifdef WANT_ACCESS_KEY_VERIFY
+#include "uak_verify.hpp"
 #endif
 
 extern boost::asio::io_context& getIOContext();
@@ -33,8 +39,16 @@ PHOSPHOR_LOG2_USING;
 using namespace phosphor::logging;
 using InternalFailure =
     sdbusplus::error::xyz::openbmc_project::common::InternalFailure;
+using AccessKeyErr =
+    sdbusplus::error::xyz::openbmc_project::software::version::ExpiredAccessKey;
+using IncompatibleErr =
+    sdbusplus::error::xyz::openbmc_project::software::version::Incompatible;
 
 #ifdef WANT_SIGNATURE_VERIFY
+namespace control = sdbusplus::server::xyz::openbmc_project::control;
+#endif
+
+#ifdef WANT_ACCESS_KEY_VERIFY
 namespace control = sdbusplus::server::xyz::openbmc_project::control;
 #endif
 
@@ -90,6 +104,66 @@ auto Activation::activation(Activations value) -> Activations
 
     if (value == softwareServer::Activation::Activations::Activating)
     {
+#ifdef WANT_ACCESS_KEY_VERIFY
+        if (!std::filesystem::exists("/tmp/inband-update"))
+        {
+            fs::path manifestPath(IMG_UPLOAD_DIR);
+            manifestPath /= (versionId + '/' + MANIFEST_FILE_NAME);
+
+            using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
+            UpdateAccessKey updateAccessKey(manifestPath);
+
+            using VersionClass = phosphor::software::manager::Version;
+            std::string versionID =
+                VersionClass::getValue(manifestPath.string(), "version");
+
+            // The release version is expected to be in the format of XXYYYY
+            // where YYYY is the release version, Ex: fw1050
+            std::string currVersion = versionID.substr(2, 7);
+
+            std::string buildID{};
+            std::size_t pos;
+            const std::regex pattern("\\d+-\\d+");
+            buildID = VersionClass::getValue(manifestPath.string(), "BuildId");
+            if (buildID.empty())
+            {
+                error("BMC build id is empty");
+            }
+
+            if (std::regex_match(buildID, pattern))
+            {
+                isOneOff = true;
+                pos = buildID.find_first_of("-") + 1;
+                buildID = buildID.substr(pos);
+            }
+
+            updateAccessKey.sync();
+
+            try
+            {
+                if (!updateAccessKey.verify(buildID, currVersion, isOneOff))
+                {
+                    utils::createBmcDump(bus);
+                    if (parent.control::FieldMode::fieldModeEnabled())
+                    {
+                        return softwareServer::Activation::activation(
+                            softwareServer::Activation::Activations::Failed);
+                    }
+                }
+            }
+            catch (AccessKeyErr& e)
+            {
+                commit<AccessKeyErr>();
+                utils::createBmcDump(bus);
+                if (parent.control::FieldMode::fieldModeEnabled())
+                {
+                    return softwareServer::Activation::activation(
+                        softwareServer::Activation::Activations::Failed);
+                }
+            }
+        }
+#endif
+
 #ifdef WANT_SIGNATURE_VERIFY
         fs::path uploadDir(IMG_UPLOAD_DIR);
         if (!verifySignature(uploadDir / versionId, SIGNED_IMAGE_CONF_PATH))
@@ -97,6 +171,7 @@ auto Activation::activation(Activations value) -> Activations
             using InvalidSignatureErr = sdbusplus::error::xyz::openbmc_project::
                 software::version::InvalidSignature;
             report<InvalidSignatureErr>();
+            utils::createBmcDump(bus);
             // Stop the activation process, if fieldMode is enabled.
             if (parent.control::FieldMode::fieldModeEnabled())
             {
@@ -108,10 +183,28 @@ auto Activation::activation(Activations value) -> Activations
 
         auto versionStr = parent.versions.find(versionId)->second->version();
 
-        if (!minimum_ship_level::verify(versionStr))
+        // Perform minimum ship validation if this is not an inband update or if
+        // the reset msl has been requested since an inband update does not
+        // reset the msl value.
+        if ((!std::filesystem::exists("/tmp/inband-update")) ||
+            (std::filesystem::exists(minimum_ship_level::resetFile)))
         {
-            return softwareServer::Activation::activation(
-                softwareServer::Activation::Activations::Failed);
+            try
+            {
+                if (!minimum_ship_level::verify(versionStr))
+                {
+                    utils::createBmcDump(bus);
+                    return softwareServer::Activation::activation(
+                        softwareServer::Activation::Activations::Failed);
+                }
+            }
+            catch (IncompatibleErr& e)
+            {
+                commit<IncompatibleErr>();
+                utils::createBmcDump(bus);
+                return softwareServer::Activation::activation(
+                    softwareServer::Activation::Activations::Failed);
+            }
         }
 
         if (!activationProgress)
@@ -278,8 +371,18 @@ auto Activation::requestedActivation(RequestedActivations value)
             (softwareServer::Activation::activation() ==
              softwareServer::Activation::Activations::Failed))
         {
-            Activation::activation(
-                softwareServer::Activation::Activations::Activating);
+            if (parent.activationInProgress())
+            {
+                error("Another code update is already in progress");
+                utils::createBmcDump(bus);
+                Activation::activation(
+                    softwareServer::Activation::Activations::Failed);
+            }
+            else
+            {
+                Activation::activation(
+                    softwareServer::Activation::Activations::Activating);
+            }
         }
     }
     return softwareServer::Activation::requestedActivation(value);
