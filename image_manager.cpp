@@ -158,7 +158,9 @@ int Manager::processImage(const std::string& tarFilePath)
                                                "MachineName");
     if (!machineStr.empty())
     {
-        if (machineStr != currMachine)
+        // If ignoreMachineName is set then let the update continue
+        if (!std::filesystem::exists("/tmp/ignore-machine-name") &&
+            machineStr != currMachine)
         {
             error(
                 "BMC upgrade: Machine name doesn't match: {CURRENT_MACHINE} vs {NEW_MACHINE}",
@@ -221,7 +223,9 @@ int Manager::processImage(const std::string& tarFilePath)
         {
             auto currPlatform = match[2].str();
 
-            if (platform != currPlatform)
+            // If ignoreMachineName is set then let the update continue
+            if (!std::filesystem::exists("/tmp/ignore-machine-name") &&
+                platform != currPlatform)
             {
                 error("BMC upgrade: Platform name doesn't match: "
                       "{CURRENT_PLATFORM} vs {NEW_PLATFORM}",
