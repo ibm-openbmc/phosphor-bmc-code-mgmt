@@ -59,4 +59,14 @@ void set();
  */
 void reset();
 
+/** @brief Check if the minimum ship level option is enabled
+ *  @return true if enabled, false otherwise
+ */
+bool enabled();
+
+/** @brief Get the minimum version
+ *  @return[out] msl - Minimum version string
+ */
+std::string getMinimumVersion();
+
 } // namespace minimum_ship_level
