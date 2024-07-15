@@ -101,17 +101,6 @@ class ItemUpdater : public ItemUpdaterInherit
 #ifdef HOST_BIOS_UPGRADE
         createBIOSObject();
 #endif
-
-        if (minimum_ship_level::enabled())
-        {
-            minimumVersionObject = std::make_unique<MinimumVersion>(bus, path);
-            minimumVersionObject->minimumVersion(
-                minimum_ship_level::getMinimumVersion());
-        }
-
-        lidClass = std::make_unique<phosphor::software::manager::Lid>(
-            bus, path.c_str());
-
         emit_object_added();
     };
 
