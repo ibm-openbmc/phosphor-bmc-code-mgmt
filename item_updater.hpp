@@ -307,9 +307,6 @@ class ItemUpdater : public ItemUpdaterInherit
     /** @brief Persistent MinimumVersion D-Bus object */
     std::unique_ptr<MinimumVersion> minimumVersionObject;
 
-    /** @brief Persistent MinimumVersion D-Bus object */
-    std::unique_ptr<MinimumVersion> minimumVersionObject;
-
 #ifdef HOST_BIOS_UPGRADE
     /** @brief Create the BIOS object without knowing the version.
      *
