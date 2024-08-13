@@ -104,6 +104,23 @@ auto Activation::activation(Activations value) -> Activations
 
     if (value == softwareServer::Activation::Activations::Activating)
     {
+#ifdef WANT_SIGNATURE_VERIFY
+        fs::path uploadDir(IMG_UPLOAD_DIR);
+        if (!verifySignature(uploadDir / versionId, SIGNED_IMAGE_CONF_PATH))
+        {
+            using InvalidSignatureErr = sdbusplus::error::xyz::openbmc_project::
+                software::version::InvalidSignature;
+            report<InvalidSignatureErr>();
+            utils::createBmcDump(bus);
+            // Stop the activation process, if fieldMode is enabled.
+            if (parent.control::FieldMode::fieldModeEnabled())
+            {
+                return softwareServer::Activation::activation(
+                    softwareServer::Activation::Activations::Failed);
+            }
+        }
+#endif
+
 #ifdef WANT_ACCESS_KEY_VERIFY
         if (!std::filesystem::exists("/tmp/inband-update"))
         {
@@ -160,23 +177,6 @@ auto Activation::activation(Activations value) -> Activations
                     return softwareServer::Activation::activation(
                         softwareServer::Activation::Activations::Failed);
                 }
-            }
-        }
-#endif
-
-#ifdef WANT_SIGNATURE_VERIFY
-        fs::path uploadDir(IMG_UPLOAD_DIR);
-        if (!verifySignature(uploadDir / versionId, SIGNED_IMAGE_CONF_PATH))
-        {
-            using InvalidSignatureErr = sdbusplus::error::xyz::openbmc_project::
-                software::version::InvalidSignature;
-            report<InvalidSignatureErr>();
-            utils::createBmcDump(bus);
-            // Stop the activation process, if fieldMode is enabled.
-            if (parent.control::FieldMode::fieldModeEnabled())
-            {
-                return softwareServer::Activation::activation(
-                    softwareServer::Activation::Activations::Failed);
             }
         }
 #endif
