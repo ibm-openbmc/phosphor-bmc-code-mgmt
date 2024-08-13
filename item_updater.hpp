@@ -101,6 +101,8 @@ class ItemUpdater : public ItemUpdaterInherit
 #ifdef HOST_BIOS_UPGRADE
         createBIOSObject();
 #endif
+        lidClass = std::make_unique<phosphor::software::manager::Lid>(
+            bus, path.c_str());
         emit_object_added();
     };
 
