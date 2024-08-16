@@ -140,8 +140,8 @@ void ItemUpdater::createActivation(sdbusplus::message_t& msg)
             result = ItemUpdater::validateSquashFSImage(filePath);
         else
             result = ItemUpdater::ActivationStatus::ready;
-
-        AssociationList associations = {};
+        }
+        AssociationList associations;
 
         if (result == ItemUpdater::ActivationStatus::ready)
         {
@@ -158,8 +158,8 @@ void ItemUpdater::createActivation(sdbusplus::message_t& msg)
             std::bind(&ItemUpdater::erase, this, std::placeholders::_1),
             versionId);
         versionPtr->deleteObject =
-            std::make_unique<phosphor::software::manager::Delete>(bus, path,
-                                                                  *versionPtr);
+            std::make_unique<phosphor::software::manager::Delete>(
+                bus, path, *versionPtr);
         versions.insert(std::make_pair(versionId, std::move(versionPtr)));
 
         activations.insert(std::make_pair(
@@ -291,7 +291,7 @@ void ItemUpdater::processBMCImage()
                 }
             }
 
-            AssociationList associations = {};
+            AssociationList associations;
 
             if (activationState == server::Activation::Activations::Active)
             {
@@ -380,8 +380,8 @@ void ItemUpdater::processBMCImage()
         // create rofs-<versionId>-functional under MEDIA_DIR, then call again
         // processBMCImage() to create the D-Bus interface for it.
         auto version = VersionClass::getBMCVersion(OS_RELEASE_FILE);
-        auto id = phosphor::software::manager::Version::getId(version +
-                                                              functionalSuffix);
+        auto id = phosphor::software::manager::Version::getId(
+            version + functionalSuffix);
         auto versionFileDir = BMC_ROFS_PREFIX + id + functionalSuffix + "/etc/";
         try
         {
@@ -389,8 +389,8 @@ void ItemUpdater::processBMCImage()
             {
                 fs::create_directories(versionFileDir);
             }
-            auto versionFilePath = BMC_ROFS_PREFIX + id + functionalSuffix +
-                                   OS_RELEASE_FILE;
+            auto versionFilePath =
+                BMC_ROFS_PREFIX + id + functionalSuffix + OS_RELEASE_FILE;
             fs::create_directory_symlink(OS_RELEASE_FILE, versionFilePath);
             ItemUpdater::processBMCImage();
         }
@@ -532,10 +532,10 @@ void ItemUpdater::freePriority(uint8_t value, const std::string& versionId)
                                std::pair<std::string, uint8_t>)>
         cmpPriority;
     cmpPriority cmpPriorityFunc =
-        [](std::pair<std::string, uint8_t> priority1,
-           std::pair<std::string, uint8_t> priority2) {
-        return priority1.second <= priority2.second;
-    };
+        [](const std::pair<std::string, uint8_t>& priority1,
+           const std::pair<std::string, uint8_t>& priority2) {
+            return priority1.second <= priority2.second;
+        };
 
     // Sort versions by ascending priority
     std::set<std::pair<std::string, uint8_t>, cmpPriority> prioritySet(
@@ -617,8 +617,8 @@ void ItemUpdater::restoreFieldModeStatus()
     // The fieldmode u-boot environment variable may not exist since it is not
     // part of the default environment, run fw_printenv with 2>&1 to ignore the
     // error message in the journal "Error: "fieldmode" not defined"
-    std::pair<int, std::string> ret = utils::execute("/sbin/fw_printenv", "-n",
-                                                     "fieldmode", "2>&1");
+    std::pair<int, std::string> ret =
+        utils::execute("/sbin/fw_printenv", "-n", "fieldmode", "2>&1");
 
     if (ret.first != 0)
     {
@@ -871,7 +871,7 @@ void ItemUpdater::createBIOSObject()
 
     auto versionId = path.substr(pos + 1);
     auto version = "null";
-    AssociationList assocs = {};
+    AssociationList assocs;
     biosActivation = std::make_unique<Activation>(
         bus, path, *this, versionId, server::Activation::Activations::Active,
         assocs);
@@ -883,8 +883,8 @@ void ItemUpdater::createBIOSObject()
         std::vector<std::string>(),
         std::bind(dummyErase, std::placeholders::_1), "");
     biosVersion->deleteObject =
-        std::make_unique<phosphor::software::manager::Delete>(bus, path,
-                                                              *biosVersion);
+        std::make_unique<phosphor::software::manager::Delete>(
+            bus, path, *biosVersion);
 }
 #endif
 
