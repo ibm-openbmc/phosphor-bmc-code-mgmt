@@ -356,6 +356,7 @@ void ItemUpdater::processBMCImage()
 
                 if (minimum_ship_level::enabled())
                 {
+                    minimum_ship_level::sync();
                     minimumVersionObject =
                         std::make_unique<MinimumVersion>(bus, path);
                     minimumVersionObject->minimumVersion(
