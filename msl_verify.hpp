@@ -6,6 +6,7 @@ namespace minimum_ship_level
 {
 
 constexpr auto resetFile = "/tmp/reset-msl";
+constexpr auto mslFile = "msl-data";
 
 /** @brief Version components */
 struct Version
@@ -67,5 +68,17 @@ bool enabled();
  *  @return[out] msl - Minimum version string
  */
 std::string getMinimumVersion();
+
+/** @brief Syncs the msl value in VPD and flash
+ *  @details Sync the value in VPD to flash. If the VPD is blank, use the value
+ *           in flash to write the VPD.
+ */
+void sync();
+
+/** @brief Read the Min Ship Level from flash */
+std::string readFlashValue();
+
+/** @brief Write the Min Ship Level to flash */
+void writeFlashValue(const std::string& value);
 
 } // namespace minimum_ship_level
