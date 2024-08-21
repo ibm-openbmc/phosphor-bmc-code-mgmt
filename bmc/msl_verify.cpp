@@ -154,18 +154,6 @@ bool minimum_ship_level::verify(const std::string& versionManifest)
     return true;
 }
 
-bool minimum_ship_level::enabled()
-{
-    std::string msl = getMinimumVersion();
-    std::string mslRegex{REGEX_BMC_MSL};
-    return !msl.empty() && !mslRegex.empty();
-}
-
-std::string minimum_ship_level::getMinimumVersion()
-{
-    return BMC_MSL;
-}
-
 std::string minimum_ship_level::readSystemKeyword()
 {
     std::string minLevel{};
@@ -177,22 +165,14 @@ std::string minimum_ship_level::readSystemKeyword()
     method.append("com.ibm.ipzvpd.VSYS");
     method.append("FV");
 
-    try
+    auto result = bus.call(method);
+    if (!result.is_method_error())
     {
-        auto result = bus.call(method);
-        if (!result.is_method_error())
-        {
-            std::variant<std::vector<uint8_t>> value;
-            result.read(value);
-            auto prop = std::get<std::vector<uint8_t>>(value);
-            minLevel.assign(reinterpret_cast<const char*>(prop.data()),
-                            prop.size());
-        }
-    }
-    catch (const sdbusplus::exception::exception& e)
-    {
-        error("Error reading VPD keyword: {ERROR}", "ERROR", e);
-        report<InternalFailure>();
+        std::variant<std::vector<uint8_t>> value;
+        result.read(value);
+        auto prop = std::get<std::vector<uint8_t>>(value);
+        minLevel.assign(reinterpret_cast<const char*>(prop.data()),
+                        prop.size());
     }
     return minLevel;
 }
@@ -258,4 +238,115 @@ void minimum_ship_level::set()
 void minimum_ship_level::reset()
 {
     std::ofstream outputFile(resetFile);
+}
+
+bool minimum_ship_level::enabled()
+{
+    auto isUninitialized = [](std::string mslStr) {
+        return (mslStr.empty() || (mslStr.front() == '\0') ||
+                isspace(mslStr.front()) || (mslStr.front() == '0'));
+    };
+
+    std::string msl = getMinimumVersion();
+    std::string mslRegex{REGEX_BMC_MSL};
+    if (!(isUninitialized(msl)) && !mslRegex.empty())
+    {
+        return true;
+    }
+    return false;
+}
+
+std::string minimum_ship_level::getMinimumVersion()
+{
+    auto isUninitialized = [](std::string mslStr) {
+        return (mslStr.empty() || (mslStr.front() == '\0') ||
+                isspace(mslStr.front()) || (mslStr.front() == '0'));
+    };
+
+    std::string msl{BMC_MSL};
+    if (msl.empty())
+    {
+        try
+        {
+            //  If the minimum level was not set as a compile-time option, check
+            //  VPD
+            msl = readSystemKeyword();
+        }
+        catch (const sdbusplus::exception::exception& e)
+        {
+            info("Error reading VPD keyword: {ERROR}", "ERROR", e);
+        }
+        if (isUninitialized(msl))
+        {
+            // If VPD is empty or there was an error, check the flash value
+            msl = readFlashValue();
+        }
+    }
+    return msl;
+}
+
+void minimum_ship_level::sync()
+{
+    auto isUninitialized = [](std::string mslStr) {
+        return (mslStr.empty() || (mslStr.front() == '\0') ||
+                isspace(mslStr.front()) || (mslStr.front() == '0'));
+    };
+
+    std::string msl{};
+    try
+    {
+        msl = readSystemKeyword();
+    }
+    catch (const sdbusplus::exception::exception& e)
+    {
+        // VPD service may not had started yet, skip sync
+        info("Error reading VPD keyword: {ERROR}", "ERROR", e);
+        return;
+    }
+    auto flashValue = readFlashValue();
+    if (!isUninitialized(msl))
+    {
+        if (msl.compare(flashValue) != 0)
+        {
+            // Write VPD value to flash
+            writeFlashValue(msl);
+        }
+    }
+    else if (!isUninitialized(flashValue))
+    {
+        // Write flash value to VPD
+        writeSystemKeyword(flashValue);
+    }
+}
+
+std::string minimum_ship_level::readFlashValue()
+{
+    auto flashFilePath = std::filesystem::path(PERSIST_DIR) / mslFile;
+    std::string flashValue{};
+    if (std::filesystem::exists(flashFilePath))
+    {
+        std::ifstream inputFile(flashFilePath.string(), std::ios::in);
+        if (inputFile)
+        {
+            inputFile >> flashValue;
+            inputFile.close();
+        }
+    }
+    return flashValue;
+}
+
+void minimum_ship_level::writeFlashValue(const std::string& value)
+{
+    auto flashFilePath = std::filesystem::path(PERSIST_DIR) / mslFile;
+    if (!std::filesystem::is_directory(flashFilePath.parent_path()))
+    {
+        std::filesystem::create_directories(flashFilePath.parent_path());
+    }
+    std::ofstream outputFile(flashFilePath.string(),
+                             std::ios::out | std::ios::trunc);
+    if (outputFile)
+    {
+        outputFile << value;
+        outputFile.close();
+    }
 }
