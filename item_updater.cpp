@@ -140,7 +140,6 @@ void ItemUpdater::createActivation(sdbusplus::message_t& msg)
             result = ItemUpdater::validateSquashFSImage(filePath);
         else
             result = ItemUpdater::ActivationStatus::ready;
-        }
         AssociationList associations;
 
         if (result == ItemUpdater::ActivationStatus::ready)
