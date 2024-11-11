@@ -80,8 +80,19 @@ bool minimum_ship_level::verify(const std::string& versionManifest)
             }
         }
         info("Resetting Minimum Ship Level to: {MSL}", "MSL", resetStr);
-        writeSystemKeyword(resetStr);
+        try
+        {
+            writeSystemKeyword(resetStr);
+        }
+        catch (const sdbusplus::exception::exception& e)
+        {
+            error("Error writing VPD keyword to {MIN_LEVEL}: {ERROR}",
+                  "MIN_LEVEL", resetStr, "ERROR", e);
+            report<InternalFailure>();
+        }
     }
+
+    sync();
 
     //  If there is no msl or mslRegex return upgrade is needed.
     if (!enabled())
@@ -168,21 +179,12 @@ void minimum_ship_level::writeSystemKeyword(const std::string& value)
     std::vector<uint8_t> vpdValue(value.begin(), value.end());
     vpdValue.insert(vpdValue.end(), 32 - vpdValue.size(), ' ');
 
-    try
-    {
-        auto service = utils::getService(bus, vpdPath, vpdInterface);
-        auto method = bus.new_method_call(service.c_str(), vpdPath,
-                                          vpdInterface, "WriteKeyword");
-        method.append(static_cast<sdbusplus::message::object_path>(objectPath),
-                      vpdRecord, vpdKeyword, vpdValue);
-        bus.call_noreply(method);
-    }
-    catch (const sdbusplus::exception::exception& e)
-    {
-        error("Error writing VPD keyword to {MIN_LEVEL}: {ERROR}", "MIN_LEVEL",
-              value, "ERROR", e);
-        report<InternalFailure>();
-    }
+    auto service = utils::getService(bus, vpdPath, vpdInterface);
+    auto method = bus.new_method_call(service.c_str(), vpdPath, vpdInterface,
+                                      "WriteKeyword");
+    method.append(static_cast<sdbusplus::message::object_path>(objectPath),
+                  vpdRecord, vpdKeyword, vpdValue);
+    bus.call_noreply(method);
 }
 
 void minimum_ship_level::set()
@@ -207,7 +209,17 @@ void minimum_ship_level::set()
     info("Current version: {VERSION}. Setting Minimum Ship Level to: {MSL}",
          "VERSION", version, "MSL", msl);
 
-    writeSystemKeyword(msl);
+    try
+    {
+        writeSystemKeyword(msl);
+        sync();
+    }
+    catch (const sdbusplus::exception::exception& e)
+    {
+        error("Error writing VPD keyword to {MIN_LEVEL}: {ERROR}", "MIN_LEVEL",
+              msl, "ERROR", e);
+        report<InternalFailure>();
+    }
 }
 
 void minimum_ship_level::reset()
@@ -290,7 +302,17 @@ void minimum_ship_level::sync()
     else if (!isUninitialized(flashValue))
     {
         // Write flash value to VPD
-        writeSystemKeyword(flashValue);
+        try
+        {
+            writeSystemKeyword(flashValue);
+        }
+        catch (const sdbusplus::exception::exception& e)
+        {
+            // IBM VPD service may not had started yet, skip sync
+            info("Error writing VPD keyword to {MIN_LEVEL}: {ERROR}",
+                 "MIN_LEVEL", flashValue, "ERROR", e);
+            return;
+        }
     }
 }
 
