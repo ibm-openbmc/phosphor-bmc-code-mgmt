@@ -86,6 +86,10 @@ void Lid::validate(std::string filePath)
     uint32_t adfCount;
     uint32_t adfSize;
     uint32_t adfSignature;
+    char spnmName[10];
+    std::string fwVersion{};
+    std::string gaDate{};
+    std::string buildVersion{};
 
     // Read the total number of ADFs present in the Marker LID file
     efile.seekg(offBuff, efile.beg);
@@ -116,56 +120,18 @@ void Lid::validate(std::string filePath)
 
             // Read the SPNM version name of format FWXXXX.YY
             efile.seekg(htonl(markerSpnmAdfHeader.offset), efile.cur);
-            char spnmName[10];
+            efile.read(spnmName, sizeof(spnmName));
             // Terminate with NULL to avoid garbage in the string
             spnmName[9] = '\0';
-            efile.read(spnmName, sizeof(spnmName));
-            fwVersion.append(spnmName);
 
-            // The version name in the marker lid has a format FWXXXX.YY. The
-            // minimum ship level check expects a version format fwXXXX.YY-ZZ,
-            // where ZZ is the revision information. The missing revision has
-            // the following implications:
-            // 1. Need to build the version string to match the msl format by
-            // replacing the initial 2 upper case characters with lower case,
-            // and appending a revision number to the string. Choose 99 so that
-            // it's higher than any revision set as the minimum ship level.
-            // 2. The msl verification function sets the msl value to the
-            // provided version string if the reset msl file exists. Therefore,
-            // skip the msl verification if the reset msl file exists because
-            // we don't want the new msl version to be set to the arbitrary
-            // revision of -99.
-            if (!std::filesystem::exists(minimum_ship_level::resetFile))
-            {
-                std::string version("fw");
-                version.append(spnmName + 2);
-                version.append("-99");
-
-                // Only call the msl verification if the built string matches
-                // the expected format.
-                std::string mslRegex{REGEX_BMC_MSL};
-                if (!mslRegex.empty())
-                {
-                    std::smatch match;
-                    std::regex rx{mslRegex, std::regex::extended};
-                    if (std::regex_search(version, match, rx))
-                    {
-                        minimum_ship_level::verify(version);
-                    }
-                }
-            }
+            fwVersion = spnmName;
         }
         // If the ADF is FIPP aka the firmware IP ADF
         else if (htonl(adfSignature) == markerAdfFippSig)
         {
 #ifdef WANT_ACCESS_KEY_VERIFY
-            using namespace phosphor::software::image;
-            using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
-            UpdateAccessKey updateAccessKey("");
             markerFwIPAdfHeader_t markerFippAdfHeader;
             fippAdfData_t fippData;
-            std::string gaDate{};
-            std::string buildVersion{};
 
             // Read the ADF header into markerFippAdfHeader structure
             efile.read(reinterpret_cast<char*>(&markerFippAdfHeader),
@@ -186,23 +152,64 @@ void Lid::validate(std::string filePath)
             }
 
             gaDate = fippData.SPDate;
-
-            // Calling the UAK verify method
-            std::regex pattern(R"(FW(\d+\.\d{2}))");
-            std::smatch match;
-            if (std::regex_search(fwVersion, match, pattern))
-            {
-                buildVersion = match[1];
-            }
-
-            updateAccessKey.verify(gaDate, buildVersion, isOneOff);
-            isOneOff = false;
 #endif
         }
         // seek to the next ADF in the Marker LID
         adfStartOffset += htonl(adfSize);
         efile.seekg(adfStartOffset, efile.beg);
     }
+
+#ifdef WANT_ACCESS_KEY_VERIFY
+    // Calling the UAK verify method
+    using namespace phosphor::software::image;
+    using UpdateAccessKey = phosphor::software::image::UpdateAccessKey;
+    UpdateAccessKey updateAccessKey("");
+
+    std::regex pattern(R"(FW(\d+\.\d{2}))");
+    std::smatch match;
+    if (std::regex_search(fwVersion, match, pattern))
+    {
+        buildVersion = match[1];
+    }
+
+    updateAccessKey.verify(gaDate, buildVersion, isOneOff);
+    isOneOff = false;
+#endif
+
+    // Minimum Ship Level Check
+    // The version name in the marker lid has a format FWXXXX.YY. The
+    // minimum ship level check expects a version format fwXXXX.YY-ZZ,
+    // where ZZ is the revision information. The missing revision has
+    // the following implications:
+    // 1. Need to build the version string to match the msl format by
+    // replacing the initial 2 upper case characters with lower case,
+    // and appending a revision number to the string. Choose 99 so that
+    // it's higher than any revision set as the minimum ship level.
+    // 2. The msl verification function sets the msl value to the
+    // provided version string if the reset msl file exists. Therefore,
+    // skip the msl verification if the reset msl file exists because
+    // we don't want the new msl version to be set to the arbitrary
+    // revision of -99.
+    if (!std::filesystem::exists(minimum_ship_level::resetFile))
+    {
+        std::string version("fw");
+        version.append(spnmName + 2);
+        version.append("-99");
+
+        // Only call the msl verification if the built string matches
+        // the expected format.
+        std::string mslRegex{REGEX_BMC_MSL};
+        if (!mslRegex.empty())
+        {
+            std::smatch match;
+            std::regex rx{mslRegex, std::regex::extended};
+            if (std::regex_search(version, match, rx))
+            {
+                minimum_ship_level::verify(version);
+            }
+        }
+    }
+
     return;
 }
 

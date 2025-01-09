@@ -48,7 +48,6 @@ class Lid : public LidInherit
     void assembleCodeUpdateImage();
 
   private:
-    std::string fwVersion;
     bool isOneOff = false;
 
     sdbusplus::bus_t& bus;

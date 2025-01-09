@@ -130,7 +130,6 @@ bool UpdateAccessKey::checkIfUAKValid(const std::string& buildID)
 bool UpdateAccessKey::verify(const std::string& gaDate,
                              const std::string& version, bool isOneOff)
 {
-    std::string expirationDate{};
     std::string buildID{};
     buildID = gaDate;
 
@@ -140,6 +139,13 @@ bool UpdateAccessKey::verify(const std::string& gaDate,
         {
             if (version.empty())
             {
+                error(
+                    "Update Access Key validation failed. Expiration Date: {EXP_DATE}. "
+                    "Build date: {BUILD_ID}.",
+                    "EXP_DATE", expirationDate, "BUILD_ID", buildIDTrunc);
+                elog<AccessKeyErr>(
+                    ExpiredAccessKey::EXP_DATE(expirationDate.c_str()),
+                    ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
                 return false;
             }
             std::string versionID =
