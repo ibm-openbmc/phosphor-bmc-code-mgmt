@@ -508,6 +508,14 @@ function cmp_uboot() {
     fi
 }
 
+# IMA requires the initramfs type to be tmpfs, set it if it's not already set.
+function set_rootfstype() {
+    boot_args="$(fw_printenv -n setmmcargs)"
+    if ! echo "${boot_args}" | grep -w -q rootfstype; then
+        fw_setenv setmmcargs "${boot_args} rootfstype=tmpfs"
+    fi
+}
+
 # The eMMC partition labels for the kernel and rootfs are boot-a/b and rofs-a/b.
 # Return the label (a or b) for the running partition.
 function mmc_get_primary_label() {
@@ -609,6 +617,8 @@ function mmc_update() {
         mkdir -p "${hostfwdir}"/alternate
         mount "${hostfwdir}"/hostfw-"${label}" "${hostfwdir}"/alternate -o ro
     fi
+
+    set_rootfstype
 
     set_flashid "${label}"
 }
