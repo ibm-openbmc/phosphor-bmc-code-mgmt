@@ -1,9 +1,11 @@
 #include "side_switch.hpp"
 
 #include "utils.hpp"
+#include "version.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 
+#include <cstdint>
 #include <exception>
 #include <string>
 #include <thread>
@@ -17,6 +19,16 @@ bool sideSwitchNeeded(sdbusplus::bus_t& bus)
     std::string fwRunningVersionPath;
     uint8_t fwRunningPriority = 0;
 
+    auto isPurposeBMC = [&bus](std::string versionPath) {
+        using versionServer =
+            sdbusplus::server::xyz::openbmc_project::software::Version;
+        auto purposeStr = utils::getProperty<std::string>(
+            bus, versionPath, std::string{VERSION_IFACE}, "Purpose");
+        auto purpose =
+            versionServer::convertVersionPurposeFromString(purposeStr);
+        return (purpose == versionServer::VersionPurpose::BMC);
+    };
+
     // Get active image
     try
     {
@@ -24,12 +36,22 @@ bool sideSwitchNeeded(sdbusplus::bus_t& bus)
             utils::getProperty<std::vector<std::string>>(
                 bus, "/xyz/openbmc_project/software/functional",
                 "xyz.openbmc_project.Association", "endpoints");
-        if (paths.size() != 1)
+        if (paths.size() == 1)
         {
-            info("side-switch only supports BMC-purpose image systems");
-            return (false);
+            fwRunningVersionPath = paths[0];
         }
-        fwRunningVersionPath = paths[0];
+        else
+        {
+            // Find the BMC-purpose one
+            for (const auto& path : paths)
+            {
+                if (isPurposeBMC(path))
+                {
+                    fwRunningVersionPath = path;
+                    break;
+                }
+            }
+        }
         info("Running firmware version path is {FW_PATH}", "FW_PATH",
              fwRunningVersionPath);
     }
@@ -99,16 +121,20 @@ bool sideSwitchNeeded(sdbusplus::bus_t& bus)
         }
         try
         {
-            uint8_t thisPathPri = utils::getProperty<uint8_t>(
-                bus, fwPath.c_str(),
-                "xyz.openbmc_project.Software.RedundancyPriority", "Priority");
-
-            if (thisPathPri < fwRunningPriority)
+            if (isPurposeBMC(fwPath))
             {
-                info(
-                    "{FW_PATH} has a higher priority, {FW_PRIORITY}, then running priority",
-                    "FW_PATH", fwPath, "FW_PRIORITY", thisPathPri);
-                return (true);
+                uint8_t thisPathPri = utils::getProperty<uint8_t>(
+                    bus, fwPath.c_str(),
+                    "xyz.openbmc_project.Software.RedundancyPriority",
+                    "Priority");
+
+                if (thisPathPri < fwRunningPriority)
+                {
+                    info(
+                        "{FW_PATH} has a higher priority {FW_PRIORITY} than running priority",
+                        "FW_PATH", fwPath, "FW_PRIORITY", thisPathPri);
+                    return (true);
+                }
             }
         }
         catch (const std::exception& e)
