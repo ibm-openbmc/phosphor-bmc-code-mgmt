@@ -47,7 +47,7 @@ class Helper
     void cleanup();
 
     /** @brief Do factory reset */
-    static void factoryReset();
+    void factoryReset();
 
     /** @brief Remove the image with the flash id
      *
