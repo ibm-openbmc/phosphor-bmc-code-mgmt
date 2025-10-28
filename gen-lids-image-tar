@@ -40,8 +40,8 @@ cp $HOSTFW_IMAGE_PATH $UPDATE_DIR_PATH/$HOSTFW_IMAGE_NAME
 #Remove the tarball file, then re-generate it with so that the hostfw image becomes part of the tarball
 rm -fr $TAR_IMAGE_PATH
 
-echo "Executing tar -cf $TAR_IMAGE_PATH . -C $UPDATE_DIR_PATH"
-tar -cf $TAR_IMAGE_PATH . -C $UPDATE_DIR_PATH
+echo "Executing tar -C $UPDATE_DIR_PATH -cf $TAR_IMAGE_PATH ."
+tar -C $UPDATE_DIR_PATH -cf $TAR_IMAGE_PATH .
 
 #Create a temporary file to indicate that the update is am inband code update, this is required during activation
 #as the UAK verification is already done.
