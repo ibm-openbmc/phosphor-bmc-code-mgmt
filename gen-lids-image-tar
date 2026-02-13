@@ -21,6 +21,9 @@ UPDATE_IMAGE_PATH="/tmp/images/$TAR_IMAGE_NAME"
 #The path to the code update tarball file
 TAR_IMAGE_PATH=$IMAGE_DIR_PATH/$TAR_IMAGE_NAME
 
+#cleanup
+trap '{ echo "Remove Directories"; rm -fr $UPDATE_DIR_PATH; rm -fr $LID_DIR_PATH; rm -fr $IMAGE_DIR_PATH; }' EXIT SIGINT SIGTERM ERR
+
 #Create the hostfw squashfs image from the LID files without header
 
 echo Create the hostfw squashfs image from the LID files without header
@@ -49,9 +52,4 @@ touch /tmp/inband-update
 
 #Copy the tarball to the update directory to trigger the phosphor software manager to create a version interface
 cp $TAR_IMAGE_PATH $UPDATE_IMAGE_PATH
-
-#cleanup
-rm -fr UPDATE_DIR_PATH
-rm -fr LID_DIR_PATH
-rm -fr IMAGE_DIR_PATH
 
