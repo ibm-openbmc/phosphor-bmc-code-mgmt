@@ -206,7 +206,7 @@ class Signature
      * @param[in]  - publickey
      * @param[out] - EVP_PKEY Object.
      */
-    static inline EVP_PKEY_Ptr createPublicKey(const fs::path& publicKey);
+    inline EVP_PKEY_Ptr createPublicKey(const fs::path& publicKey);
 
     /**
      * @brief Memory map the  file
@@ -253,7 +253,7 @@ class Signature
      * @return true if all image files are found in BMC tarball and
      * Verify Sucess false if one of image files is missing
      */
-    static bool checkAndVerifyImage(
+    bool checkAndVerifyImage(
         const std::string& filePath, const std::string& publicKeyPath,
         const std::vector<std::string>& imageList, bool& fileFound,
         const std::string& hashType = "", const std::string& sigSubDir = "");
