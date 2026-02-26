@@ -52,6 +52,12 @@ Signature::Signature(const fs::path& imageDirPath,
         sdbusplus::message::convert_from_string<VersionPurpose>(purposeString);
     purpose = convertedPurpose.value_or(Version::VersionPurpose::Unknown);
     pqAlgorithm = getPQAlgorithmFromManifest();
+
+    if (!pqAlgorithm.has_value())
+    {
+        error("MANIFEST missing MLDSA");
+        elog<InternalFailure>();
+    }
 }
 
 AvailableKeyTypes Signature::getAvailableKeyTypesFromSystem() const
@@ -83,7 +89,10 @@ AvailableKeyTypes Signature::getAvailableKeyTypesFromSystem() const
             // extract the key types
             // /etc/activationdata/OpenBMC/  -> get OpenBMC from the path
             auto key = p.path().parent_path();
-            keyTypes.insert(key.filename());
+            if (key.parent_path() == signedConfPath)
+            {
+                keyTypes.insert(key.filename());
+            }
         }
     }
 
@@ -181,27 +190,28 @@ bool Signature::verifyFullImage()
 
     if (ret)
     {
-        if (pqAlgorithm.has_value())
+        std::error_code ec2;
+        fs::path algoDir(imageDirPath / pqAlgorithm->name);
+
+        if (!fs::exists(algoDir, ec2))
         {
-            std::error_code ec2;
-            fs::path algoDir(imageDirPath / pqAlgorithm->name);
+            error("MLDSA signatures missing");
+            return false;
+        }
+        else
+        {
+            fs::path algoFullImageSig = algoDir / imageFullSig;
+            fs::path algoPublicKeyFile = algoDir / PUBLICKEY_FILE_NAME;
 
-            if (fs::exists(algoDir, ec2))
+            if (fs::exists(algoFullImageSig, ec2) &&
+                fs::exists(tmpFullFile, ec2))
             {
-                fs::path algoFullImageSig = algoDir / imageFullSig;
-                fs::path algoPublicKeyFile = algoDir / PUBLICKEY_FILE_NAME;
-
-                if (fs::exists(algoFullImageSig, ec2) &&
-                    fs::exists(tmpFullFile, ec2))
+                ret = verifyFile(tmpFullFile, algoFullImageSig,
+                                 algoPublicKeyFile, pqAlgorithm->hashType);
+                if (!ret)
                 {
-                    ret = verifyFile(tmpFullFile, algoFullImageSig,
-                                     algoPublicKeyFile, pqAlgorithm->hashType);
-                    if (!ret)
-                    {
-                        error(
-                            "Full image signature validation failed for {ALGO}",
-                            "ALGO", pqAlgorithm->name);
-                    }
+                    error("Full image signature validation failed for {ALGO}",
+                          "ALGO", pqAlgorithm->name);
                 }
             }
         }
@@ -289,30 +299,30 @@ bool Signature::verify()
                     return false;
                 }
 
-                if (pqAlgorithm.has_value())
+                fs::path algoDir(imageDirPath / pqAlgorithm->name);
+
+                if (fs::exists(algoDir, ec))
                 {
-                    fs::path algoDir(imageDirPath / pqAlgorithm->name);
+                    fs::path algoPublicKeyFile = algoDir / PUBLICKEY_FILE_NAME;
+                    fs::path algoSigFile = algoDir / (optionalImage + ".sig");
 
-                    if (fs::exists(algoDir, ec))
+                    if (!fs::exists(algoSigFile, ec))
                     {
-                        fs::path algoPublicKeyFile =
-                            algoDir / PUBLICKEY_FILE_NAME;
-                        fs::path algoSigFile =
-                            algoDir / (optionalImage + ".sig");
-
-                        if (fs::exists(algoSigFile, ec))
+                        error("MLDSA signatures missing");
+                        return false;
+                    }
+                    else
+                    {
+                        bool algoValid =
+                            verifyFile(file, algoSigFile, algoPublicKeyFile,
+                                       pqAlgorithm->hashType);
+                        if (!algoValid)
                         {
-                            bool algoValid =
-                                verifyFile(file, algoSigFile, algoPublicKeyFile,
-                                           pqAlgorithm->hashType);
-                            if (!algoValid)
-                            {
-                                error(
-                                    "Signature validation failed for optional image {IMAGE} with {ALGO}",
-                                    "IMAGE", optionalImage, "ALGO",
-                                    pqAlgorithm->name);
-                                return false;
-                            }
+                            error(
+                                "Signature validation failed for optional image {IMAGE} with {ALGO}",
+                                "IMAGE", optionalImage, "ALGO",
+                                pqAlgorithm->name);
+                            return false;
                         }
                     }
                 }
@@ -400,7 +410,7 @@ bool Signature::systemLevelVerify()
 
                         if (!fs::exists(algoDir, ec))
                         {
-                            break; // RSA passed, PQ optional
+                            return false;
                         }
 
                         // Check if system has corresponding key
@@ -410,7 +420,7 @@ bool Signature::systemLevelVerify()
 
                         if (!fs::exists(systemAlgoKeyPath, ec))
                         {
-                            break; // RSA passed, PQ optional
+                            return false;
                         }
 
                         fs::path algoManifestSig = algoDir / MANIFEST_FILE_NAME;
@@ -617,17 +627,12 @@ bool Signature::checkAndVerifyImage(
 
 bool Signature::verifyPQSignatures(const std::vector<std::string>& imageList)
 {
-    if (!pqAlgorithm.has_value())
-    {
-        return true; // No PQ algorithm, skip
-    }
-
     std::error_code ec;
     fs::path algoDir(imageDirPath / pqAlgorithm->name);
 
     if (!fs::exists(algoDir, ec))
     {
-        return true; // PQ directory doesn't exist, optional
+        return false;
     }
 
     fs::path algoPublicKeyFile = algoDir / PUBLICKEY_FILE_NAME;

@@ -220,6 +220,7 @@ class SignatureTest : public testing::Test
             manifestFile);
         command("echo \"HashType=RSA-SHA256\" >> " + manifestFile);
         command("echo \"KeyType=OpenBMC\" >> " + manifestFile);
+        command("echo \"MLDSA_Hash_Type=SHA-256,MLDSA\" >> " + manifestFile);
 
         std::string kernelFile = extractPath.string() + "/" + "image-kernel";
         command("echo \"image-kernel file \" > " + kernelFile);
@@ -255,6 +256,36 @@ class SignatureTest : public testing::Test
         command(opensslCmd + pkeyFile + " -out " + pubkeyFile + ".sig " +
                 pubkeyFile);
 
+        // Create MLDSA directory and signatures
+        std::string mldsaDir = extractPath.string() + "/MLDSA";
+        command("mkdir -p " + mldsaDir);
+
+        std::string mldsaPkeyFile = mldsaDir + "/private.pem";
+        command("openssl genrsa -out " + mldsaPkeyFile + " 2048");
+
+        std::string mldsaPubkeyFile = mldsaDir + "/publickey";
+        command("openssl rsa -in " + mldsaPkeyFile + " -outform PEM " +
+                "-pubout -out " + mldsaPubkeyFile);
+
+        std::string opensslSHA3Cmd = "openssl dgst -sha256 -sign ";
+        command(opensslSHA3Cmd + mldsaPkeyFile + " -out " + mldsaDir +
+                "/image-kernel.sig " + kernelFile);
+        command(opensslSHA3Cmd + mldsaPkeyFile + " -out " + mldsaDir +
+                "/MANIFEST.sig " + manifestFile);
+        command(opensslSHA3Cmd + mldsaPkeyFile + " -out " + mldsaDir +
+                "/image-rofs.sig " + rofsFile);
+        command(opensslSHA3Cmd + mldsaPkeyFile + " -out " + mldsaDir +
+                "/image-rwfs.sig " + rwfsFile);
+        command(opensslSHA3Cmd + mldsaPkeyFile + " -out " + mldsaDir +
+                "/image-u-boot.sig " + ubootFile);
+
+        command(opensslSHA3Cmd + mldsaPkeyFile + " -out " + mldsaDir +
+                "/publickey.sig " + pubkeyFile);
+
+        std::string systemMLDSAPath = signedConfOpenBMCPath.string() + "/MLDSA";
+        command("mkdir -p " + systemMLDSAPath);
+        command("cp " + mldsaPubkeyFile + " " + systemMLDSAPath);
+
 #ifdef WANT_SIGNATURE_VERIFY
         std::string fullFile = extractPath.string() + "/" + "image-full";
         command("cat " + kernelFile + ".sig " + rofsFile + ".sig " + rwfsFile +
@@ -262,6 +293,9 @@ class SignatureTest : public testing::Test
                 pubkeyFile + ".sig > " + fullFile);
         command(opensslCmd + pkeyFile + " -out " + fullFile + ".sig " +
                 fullFile);
+
+        command(opensslSHA3Cmd + mldsaPkeyFile + " -out " + mldsaDir +
+                "/image-full.sig " + fullFile);
 #endif
 
         signature = std::make_unique<Signature>(extractPath, signedConfPath);
@@ -341,6 +375,13 @@ TEST_F(SignatureTest, TestNoFullSignatureForBIOS)
     command("sed -i s/VersionPurpose.BMC/VersionPurpose.BIOS/ " + manifestFile);
     command(opensslCmd + pkeyFile + " -out " + manifestFile + ".sig " +
             manifestFile);
+
+    // Re-sign MANIFEST with MLDSA key
+    std::string mldsaDir = extractPath.string() + "/MLDSA";
+    std::string mldsaPkeyFile = mldsaDir + "/private.pem";
+    std::string opensslSHA256Cmd = "openssl dgst -sha256 -sign ";
+    command(opensslSHA256Cmd + mldsaPkeyFile + " -out " + mldsaDir +
+            "/MANIFEST.sig " + manifestFile);
 
     // Re-create signature object and make sure verify succeed.
     signature = std::make_unique<Signature>(extractPath, signedConfPath);
