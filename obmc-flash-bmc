@@ -576,23 +576,24 @@ function mmc_mount() {
 
 function mmc_update() {
     # Update u-boot if needed
-    if [ "$MODE" == "ufs" ]; then
-        bootPartition=$(basename "$(readlink -f /dev/disk/by-path/*ufshc-scsi-0:0:0:1)")
-    else
-        bootPartition=$(basename "$(readlink -f /dev/disk/by-path/*sdhci-boot0)")
-    fi
-    echo "mmc_update storage mode: $MODE bootPartition: $bootPartition"
-    devUBoot="/dev/${bootPartition}"
-    imgUBoot="${imgpath}/${version}/image-u-boot"
-    if [ "$(cmp_uboot "${devUBoot}" "${imgUBoot}")" != "0" ]; then
-        if [ -e "/sys/block/${bootPartition}/force_ro" ]; then
-            echo 0 > "/sys/block/${bootPartition}/force_ro"
-            dd if="${imgUBoot}" of="${devUBoot}"
-            echo 1 > "/sys/block/${bootPartition}/force_ro"
-        else
-            dd if="${imgUBoot}" of="${devUBoot}"
-        fi
-    fi
+    # TODO Comment out u-boot update for now, per Eddie A1 chips can't boot from UFS
+    # if [ "$MODE" == "ufs" ]; then
+    # bootPartition=$(basename "$(readlink -f /dev/disk/by-path/*ufshc-scsi-0:0:0:1)")
+    # else
+    # bootPartition=$(basename "$(readlink -f /dev/disk/by-path/*sdhci-boot0)")
+    # fi
+    # echo "mmc_update storage mode: $MODE bootPartition: $bootPartition"
+    # devUBoot="/dev/${bootPartition}"
+    # imgUBoot="${imgpath}/${version}/image-u-boot"
+    # if [ "$(cmp_uboot "${devUBoot}" "${imgUBoot}")" != "0" ]; then
+    # if [ -e "/sys/block/${bootPartition}/force_ro" ]; then
+    # echo 0 > "/sys/block/${bootPartition}/force_ro"
+    # dd if="${imgUBoot}" of="${devUBoot}"
+    # echo 1 > "/sys/block/${bootPartition}/force_ro"
+    # else
+    # dd if="${imgUBoot}" of="${devUBoot}"
+    # fi
+    # fi
 
     # Update the secondary (non-running) boot and rofs partitions.
     label="$(mmc_get_secondary_label)"
@@ -778,7 +779,9 @@ case "$1" in
         mmc_setprimary
         ;;
     mmc-mirroruboot)
-        mmc_mirroruboot
+        # TODO Comment out for now, per Eddie A1 chips can't boot from UFS
+        # mmc_mirroruboot
+        echo "Skipping mirror u-boot"
         ;;
     static-altfs)
         mount_static_alt "$2" "$3" "$4"
