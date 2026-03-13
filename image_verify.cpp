@@ -67,6 +67,8 @@ AvailableKeyTypes Signature::getAvailableKeyTypesFromSystem() const
         elog<InternalFailure>();
     }
 
+    mldsakeyType.reset();
+
     // Look for all the hash and public key file names get the key value
     // For example:
     // /etc/activationdata/OpenBMC/publickey
@@ -83,9 +85,20 @@ AvailableKeyTypes Signature::getAvailableKeyTypesFromSystem() const
             // extract the key types
             // /etc/activationdata/OpenBMC/  -> get OpenBMC from the path
             auto key = p.path().parent_path();
-            if (key.parent_path() == signedConfPath)
+            if (fs::equivalent(key.parent_path(), signedConfPath, ec))
             {
-                keyTypes.insert(key.filename());
+                std::string keyTypeName = key.filename().string();
+                keyTypes.insert(keyTypeName);
+                if (!mldsakeyType.has_value())
+                {
+                    std::string lowerName = keyTypeName;
+                    std::transform(lowerName.begin(), lowerName.end(),
+                                   lowerName.begin(), ::tolower);
+                    if (lowerName.find("mldsa") != std::string::npos)
+                    {
+                        mldsakeyType = keyTypeName;
+                    }
+                }
             }
         }
     }
@@ -406,9 +419,14 @@ bool Signature::systemLevelVerify()
                             break; // RSA passed, PQ optional
                         }
 
+                        if (!mldsakeyType.has_value())
+                        {
+                            break;
+                        }
+
                         // Check if system has corresponding key
                         fs::path systemAlgoKeyPath =
-                            signedConfPath / keyType / pqAlgorithm->name /
+                            signedConfPath / mldsakeyType.value() /
                             PUBLICKEY_FILE_NAME;
 
                         if (!fs::exists(systemAlgoKeyPath, ec))
