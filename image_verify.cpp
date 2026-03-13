@@ -88,16 +88,16 @@ AvailableKeyTypes Signature::getAvailableKeyTypesFromSystem() const
             if (fs::equivalent(key.parent_path(), signedConfPath, ec))
             {
                 std::string keyTypeName = key.filename().string();
-                keyTypes.insert(keyTypeName);
-                if (!mldsakeyType.has_value())
+                std::string lowerName = keyTypeName;
+                std::transform(lowerName.begin(), lowerName.end(),
+                               lowerName.begin(), ::tolower);
+                if (lowerName.find("mldsa") != std::string::npos)
                 {
-                    std::string lowerName = keyTypeName;
-                    std::transform(lowerName.begin(), lowerName.end(),
-                                   lowerName.begin(), ::tolower);
-                    if (lowerName.find("mldsa") != std::string::npos)
-                    {
-                        mldsakeyType = keyTypeName;
-                    }
+                    mldsakeyType = keyTypeName;
+                }
+                else
+                {
+                    keyTypes.insert(keyTypeName);
                 }
             }
         }
