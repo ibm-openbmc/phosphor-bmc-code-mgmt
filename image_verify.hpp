@@ -131,8 +131,10 @@ class Signature
      * @param[in]  imageDirPath - image path
      * @param[in]  signedConfPath - Path of public key
      *                              hash function files
+     * @param[in]  fieldModeEnabled - Is field mode enabled
      */
-    Signature(const fs::path& imageDirPath, const fs::path& signedConfPath);
+    Signature(const fs::path& imageDirPath, const fs::path& signedConfPath,
+              bool fieldModeEnabled = false);
 
     /**
      * @brief Image signature verification function.
@@ -240,6 +242,9 @@ class Signature
 
     /** @brief Cached post-quantum algorithm info from MANIFEST */
     std::optional<PQAlgorithm> pqAlgorithm;
+
+    /** @brief Whether field mode is enabled */
+    bool fieldModeEnabled;
 
     /** @brief Check and Verify the required image files
      *
