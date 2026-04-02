@@ -260,7 +260,7 @@ void USBManager::activationChangeEvent(sdbusplus::message::message& msg)
 }
 
 void USBManager::setProgressSRC(
-    const std::tuple<uint64_t, std::vector<uint8_t>>& prgCode,
+    const std::tuple<std::vector<uint8_t>, std::vector<uint8_t>>& prgCode,
     sdbusplus::bus::bus& bus)
 {
     static constexpr auto bootRawProgress =
@@ -275,9 +275,9 @@ void USBManager::setProgressSRC(
     {
         auto method = bus.new_method_call(bootRawProgress, bootRawSetting,
                                           dbusProperty, setMethod);
-        method.append(
-            bootRawProgress, rawProperty,
-            std::variant<std::tuple<uint64_t, std::vector<uint8_t>>>(prgCode));
+        method.append(bootRawProgress, rawProperty,
+                      std::variant<std::tuple<std::vector<uint8_t>,
+                                              std::vector<uint8_t>>>(prgCode));
         bus.call(method);
     }
     catch (std::exception& e)
@@ -291,7 +291,9 @@ void USBManager::setProgressSRC(
 void USBManager::writeProgressSRC(const std::vector<uint8_t>& primArray,
                                   sdbusplus::bus::bus& bus)
 {
-    uint64_t primaryCode = 0;
+    const size_t refcodeBegin = 40;
+    const size_t refcodeSize = 8;
+
     // Initialize vector that acts as the secondary progress code which contains
     // the ascii (8-bit) primary code which is displayed on the op panel and the
     // secondary code which contain hex words.
@@ -301,13 +303,10 @@ void USBManager::writeProgressSRC(const std::vector<uint8_t>& primArray,
         0,  0,  0,  32, 0,  32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
         32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32};
 
-    for (int i = 0; i < 8; i++)
-    {
-        secArr[40 + i] = secArr[i];
-        primaryCode |= (uint64_t)primArray[i] << 8 * i;
-    }
+    std::copy(secArr.begin(), secArr.begin() + refcodeSize,
+              secArr.begin() + refcodeBegin);
 
-    setProgressSRC(std::make_tuple(primaryCode, secArr), bus);
+    setProgressSRC(std::make_tuple(primArray, secArr), bus);
 }
 
 void USBManager::writeSuccess(sdbusplus::bus::bus& bus)
