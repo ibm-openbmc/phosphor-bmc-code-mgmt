@@ -163,6 +163,7 @@ bool Signature::verifyFullImage()
 {
     bool ret = true;
 #ifdef WANT_SIGNATURE_VERIFY
+    std::error_code ec;
     // Only verify full image for BMC
     if (purpose != VersionPurpose::BMC)
     {
@@ -199,18 +200,30 @@ bool Signature::verifyFullImage()
     {
         if (pqAlgorithm.has_value())
         {
-            std::error_code ec2;
             fs::path algoDir(imageDirPath / pqAlgorithm->name);
 
-            if (fs::exists(algoDir, ec2))
+            if (fs::exists(algoDir, ec))
             {
+                std::vector<std::string> mldsa_fullImages = {
+                    fs::path(algoDir) / "image-bmc.sig",
+                    fs::path(algoDir) / "image-hostfw.sig",
+                    fs::path(algoDir) / "image-kernel.sig",
+                    fs::path(algoDir) / "image-rofs.sig",
+                    fs::path(algoDir) / "image-rwfs.sig",
+                    fs::path(algoDir) / "image-u-boot.sig",
+                    fs::path(algoDir) / "MANIFEST.sig",
+                    fs::path(algoDir) / "publickey.sig"};
+
+                std::string tmpMLDSAFullFile = "/tmp/image-full-mldsa";
+                utils::mergeFiles(mldsa_fullImages, tmpMLDSAFullFile);
+
                 fs::path algoFullImageSig = algoDir / imageFullSig;
                 fs::path algoPublicKeyFile = algoDir / PUBLICKEY_FILE_NAME;
 
-                if (fs::exists(algoFullImageSig, ec2) &&
-                    fs::exists(tmpFullFile, ec2))
+                if (fs::exists(algoFullImageSig, ec) &&
+                    fs::exists(tmpFullFile, ec))
                 {
-                    ret = verifyFile(tmpFullFile, algoFullImageSig,
+                    ret = verifyFile(tmpMLDSAFullFile, algoFullImageSig,
                                      algoPublicKeyFile, pqAlgorithm->hashType);
                     if (!ret)
                     {
@@ -219,11 +232,12 @@ bool Signature::verifyFullImage()
                             "ALGO", pqAlgorithm->name);
                     }
                 }
+
+                fs::remove(tmpMLDSAFullFile, ec);
             }
         }
     }
 
-    std::error_code ec;
     fs::remove(tmpFullFile, ec);
 #endif
 
