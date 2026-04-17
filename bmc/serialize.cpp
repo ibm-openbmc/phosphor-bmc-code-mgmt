@@ -22,6 +22,61 @@ namespace fs = std::filesystem;
 
 const std::string priorityName = "priority";
 const std::string purposeName = "purpose";
+const std::string tarballBackupName = "tarball_backup";
+const std::string tarballFileName = "tarball_backup.tar";
+
+const auto initialBackupPath = fs::path(PERSIST_DIR) / tarballBackupName;
+
+void createTarballBackup(bool deleteInitialBackup, const std::string& flashId,
+                         fs::path source)
+{
+    std::error_code ec;
+    fs::path dest;
+
+    if (deleteInitialBackup)
+    {
+        source = initialBackupPath / tarballFileName;
+        // Store tarball in flash bank
+        dest = fs::path(PERSIST_DIR) / flashId;
+    }
+    else
+    {
+        dest = initialBackupPath;
+    }
+
+    if (!fs::exists(source, ec))
+    {
+        error("Tarball file does not exist");
+        return;
+    }
+    if (!fs::is_directory(dest, ec))
+    {
+        fs::create_directories(dest, ec);
+    }
+
+    dest = dest / tarballFileName;
+
+    try
+    {
+        fs::copy_file(source, dest, fs::copy_options::overwrite_existing, ec);
+        if (ec)
+        {
+            error("Failed to copy tarball to {DEST}: {ERROR}", "DEST", dest,
+                  "ERROR", ec.message());
+        }
+        else
+        {
+            if (deleteInitialBackup)
+            {
+                fs::remove_all(initialBackupPath, ec);
+            }
+        }
+    }
+    catch (const fs::filesystem_error& e)
+    {
+        error("Error while copying file: {ERROR}", "ERROR", e);
+    }
+}
 
 void storePriority(const std::string& flashId, uint8_t priority)
 {
