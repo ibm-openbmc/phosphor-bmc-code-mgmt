@@ -297,6 +297,7 @@ executable(
     'phosphor-version-software-manager',
     'image_manager.cpp',
     'image_manager_main.cpp',
+    'serialize.cpp',
     'version.cpp',
     'watch.cpp',
     software_manager_common_sources,

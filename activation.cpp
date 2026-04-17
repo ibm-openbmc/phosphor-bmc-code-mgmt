@@ -283,6 +283,9 @@ void Activation::onFlashWriteSuccess()
     auto flashId = parent.versions.find(versionId)->second->path();
     storePurpose(flashId, parent.versions.find(versionId)->second->purpose());
 
+    // Move tarball backup to flash bank
+    createTarballBackup(true, flashId);
+
     if (!redundancyPriority)
     {
         redundancyPriority =

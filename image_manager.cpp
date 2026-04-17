@@ -2,6 +2,7 @@
 
 #include "image_manager.hpp"
 
+#include "serialize.hpp"
 #include "version.hpp"
 #include "watch.hpp"
 
@@ -40,6 +41,7 @@ using ManifestFail = Software::image::ManifestFileFailure;
 using UnTarFail = Software::image::UnTarFailure;
 using InternalFail = Software::image::InternalFailure;
 using ImageFail = Software::image::ImageFailure;
+namespace serialize = phosphor::software::updater;
 namespace fs = std::filesystem;
 
 struct RemovablePath
@@ -258,8 +260,12 @@ int Manager::processImage(const std::string& tarFilePath)
     auto allSoftwareObjs = getSoftwareObjects(bus);
     auto it =
         std::find(allSoftwareObjs.begin(), allSoftwareObjs.end(), objPath);
+
     if (versions.find(id) == versions.end() && it == allSoftwareObjs.end())
     {
+        // Copy tarball file to persist dir
+        serialize::createTarballBackup(false, "", tarFilePath);
+
         // Rename the temp dir to image dir
         fs::rename(tmpDirPath, imageDirPath, ec);
         // Clear the path, so it does not attemp to remove a non-existing path
