@@ -122,7 +122,7 @@ class USBManager
      *            code
      **/
     void setProgressSRC(
-        const std::tuple<uint64_t, std::vector<uint8_t>>& prgCode,
+        const std::tuple<std::vector<uint8_t>, std::vector<uint8_t>>& prgCode,
         sdbusplus::bus::bus& bus);
 
     /**
