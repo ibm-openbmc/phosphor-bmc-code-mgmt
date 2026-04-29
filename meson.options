@@ -6,7 +6,7 @@
 option(
     'bmc-layout',
     type: 'combo',
-    choices: ['static', 'ubi', 'mmc'],
+    choices: ['static', 'ubi', 'mmc', 'ufs'],
     value: 'static',
     description: 'The BMC layout type.',
 )
@@ -41,6 +41,20 @@ option(
     type: 'feature',
     value: 'enabled',
     description: 'Enable image signature validation.',
+)
+
+option(
+    'verify-update-access-key',
+    type: 'feature', 
+    value: 'disabled',
+    description: 'Enable verification of update access key.',
+)
+
+option(
+    'software-manager-tool',
+    type: 'feature',
+    value: 'enabled',
+    description: 'Enable software manager tool for direct code updates.',
 )
 
 option(

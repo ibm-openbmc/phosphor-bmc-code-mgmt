@@ -307,3 +307,15 @@ endif
 if get_option('side-switch-on-boot').allowed()
     subdir('side-switch')
 endif
+
+if get_option('software-manager-tool').allowed()
+    executable(
+        'phosphor-software-manager-tool',
+        'software_manager_tool.cpp',
+        'code_updater_manager.cpp',
+        'utils.cpp',
+        dependencies: deps,
+        install: true,
+        install_dir: get_option('bindir'),
+    )
+endif
