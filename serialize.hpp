@@ -4,6 +4,7 @@
 
 #include "version.hpp"
 
+#include <filesystem>
 #include <string>
 
 namespace phosphor
@@ -13,8 +14,20 @@ namespace software
 namespace updater
 {
 
+namespace fs = std::filesystem;
+
 using VersionPurpose =
     sdbusplus::server::xyz::openbmc_project::software::Version::VersionPurpose;
+
+/**
+ *  @brief Creates a persistent backup of the tarball.
+ *  @param[in] deleteInitialBackup - If true, initial backup is deleted.
+ *  @param[in] flashId - The flash id of the version for which to store
+ *                       information.
+ *  @param[in] source - Source directory of tarball for initial backup.
+ **/
+void createTarballBackup(bool deleteInitialBackup,
+                         const std::string& flashId = "", fs::path source = "");
 
 /** @brief Serialization function - stores priority information to file
  *  @param[in] flashId - The flash id of the version for which to store
