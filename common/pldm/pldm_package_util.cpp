@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 #include <libpldm++/firmware_update.hpp>
 #include <phosphor-logging/lg2.hpp>
