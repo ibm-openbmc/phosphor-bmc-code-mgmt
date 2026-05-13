@@ -38,8 +38,9 @@ constexpr auto hashFunctionTag = "HashType";
 constexpr auto hashTagSuffix = "_Hash_Type";
 
 Signature::Signature(const fs::path& imageDirPath,
-                     const fs::path& signedConfPath) :
-    imageDirPath(imageDirPath), signedConfPath(signedConfPath)
+                     const fs::path& signedConfPath, bool fieldModeEnabled) :
+    imageDirPath(imageDirPath), signedConfPath(signedConfPath),
+    fieldModeEnabled(fieldModeEnabled)
 {
     fs::path file(imageDirPath / MANIFEST_FILE_NAME);
 
@@ -248,6 +249,12 @@ bool Signature::verify()
 {
     try
     {
+        if (!pqAlgorithm.has_value() && fieldModeEnabled)
+        {
+            error("Post-quantum algorithm is missing");
+            return false;
+        }
+
         bool valid;
         // Verify the MANIFEST and publickey file using available
         // public keys and hash on the system.
