@@ -35,6 +35,7 @@ enum ProductID
     ProductIDXDPE192C3D = 0xAF,  // Revision D
     ProductIDXDPE192C3E = 0xB8,  // Revision E
     ProductIDXDPE1D2G3B = 0xA5,  // Revision B
+    ProductIDXDPE1D2G3C = 0xA5,  // Revision C
 };
 
 constexpr uint8_t PMBusICDeviceID = 0xAD;
@@ -55,6 +56,7 @@ constexpr int XDPE192XXBConfSize = 1416; // Config(728) + PMBus(568) + SVID(120)
 constexpr int XDPE192XXCConfSize = 1504; // Config(816) + PMBus(568) + SVID(120)
 constexpr int XDPE192C3EConfSize = 1532; // Config(844) + PMBus(568) + SVID(120)
 constexpr int XDPE1D2G3BConfSize = 1552; // Config(864) + PMBus(568) + SVID(120)
+constexpr int XDPE1D2G3CConfSize = 1588; // Config(876) + PMBus(576) + SVID(136)
 constexpr uint8_t VRWarnRemaining = 3;
 constexpr uint8_t SectTrim = 0x02;
 
@@ -212,6 +214,7 @@ int XDPE1X2XX::getConfigSize(uint8_t deviceId, uint8_t revision)
         {{ProductIDXDPE192C3E, REV_E}, XDPE192C3EConfSize},
         {{ProductIDXDPE19284, REV_C}, XDPE192XXCConfSize},
         {{ProductIDXDPE1D2G3B, REV_B}, XDPE1D2G3BConfSize},
+        {{ProductIDXDPE1D2G3C, REV_C}, XDPE1D2G3CConfSize},
     };
 
     auto it = configSizeMap.find({deviceId, revision});
@@ -258,7 +261,7 @@ sdbusplus::async::task<bool> XDPE1X2XX::program(bool force)
     // NOLINTEND(clang-analyzer-core.uninitialized.Branch)
     {
         error("Failed to program the VR");
-        co_return -1;
+        co_return false;
     }
 
     debug("CRC before programming: {CRC}", "CRC", lg2::hex, sum);
@@ -267,7 +270,7 @@ sdbusplus::async::task<bool> XDPE1X2XX::program(bool force)
     if (!force && (sum == configuration.sumExp))
     {
         error("Failed to program the VR - CRC value are equal with no force");
-        co_return -1;
+        co_return false;
     }
 
     // NOLINTBEGIN(clang-analyzer-core.uninitialized.Branch)
@@ -275,7 +278,7 @@ sdbusplus::async::task<bool> XDPE1X2XX::program(bool force)
     // NOLINTEND(clang-analyzer-core.uninitialized.Branch)
     {
         error("Failed to program the VR - unable to obtain remaining writes");
-        co_return -1;
+        co_return false;
     }
 
     debug("Remaining write cycles of VR: {REMAIN}", "REMAIN", remain);
@@ -283,7 +286,7 @@ sdbusplus::async::task<bool> XDPE1X2XX::program(bool force)
     if (!remain)
     {
         error("Failed to program the VR - no remaining write cycles left");
-        co_return -1;
+        co_return false;
     }
 
     if (!force && (remain <= VRWarnRemaining))
@@ -291,7 +294,7 @@ sdbusplus::async::task<bool> XDPE1X2XX::program(bool force)
         error(
             "Failed to program the VR - {REMAIN} remaining writes left and not force",
             "REMAIN", remain);
-        co_return -1;
+        co_return false;
     }
 
     // Added reprogramming of the entire configuration file.
