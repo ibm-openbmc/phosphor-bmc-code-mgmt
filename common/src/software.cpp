@@ -93,8 +93,21 @@ sdbusplus::async::task<> Software::createInventoryAssociations(bool isRunning)
     catch (std::exception& e)
     {
 <<<<<<< HEAD
+<<<<<<< HEAD
         error("Failed to create association with {ERROR}", "ERROR", e.what());
         co_return;
+=======
+        error(e.what());
+    }
+
+    if (!associationDefinitions)
+    {
+        std::string path = objectPath;
+        associationDefinitions =
+            std::make_unique<SoftwareAssociationDefinitions>(
+                ctx, path.c_str(),
+                SoftwareAssociationDefinitions::properties_t{{}});
+>>>>>>> parent of d73d564 (common: create initial associations)
     }
 
     if (endpoint.empty())
@@ -137,19 +150,7 @@ sdbusplus::async::task<> Software::createInventoryAssociations(bool isRunning)
         assocs.push_back(assocActivating);
     }
 
-    if (associationDefinitions)
-    {
-        associationDefinitions->associations(assocs);
-    }
-    else
-    {
-        std::string path = objectPath;
-        associationDefinitions =
-            std::make_unique<SoftwareAssociationDefinitions>(
-                ctx, path.c_str(),
-                SoftwareAssociationDefinitions::properties_t{assocs});
-        associationDefinitions->emit_added();
-    }
+    associationDefinitions->associations(assocs);
 
     co_return;
 }
