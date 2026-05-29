@@ -175,9 +175,7 @@ void Software::setActivationBlocksTransition(bool enabled)
     }
 
     activationBlocksTransition =
-        std::make_unique<SoftwareActivationBlocksTransition>(ctx, objectPath);
-
-    activationBlocksTransition->emit_added();
+        std::make_unique<SoftwareActivationBlocksTransition>(ctx, path.c_str());
 }
 
 void Software::setActivation(SoftwareActivation::Activations act)
