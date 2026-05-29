@@ -112,12 +112,6 @@ sdbusplus::async::task<> Software::createInventoryAssociations(bool isRunning)
 >>>>>>> parent of df62819 (common: use aserver property constructor)
     }
 
-    createInventoryAssociation(isRunning, endpoint);
-}
-
-void Software::createInventoryAssociation(bool isRunning,
-                                          std::string objectPath)
-{
     std::vector<std::tuple<std::string, std::string, std::string>> assocs;
 
     if (endpoint.empty())
@@ -129,17 +123,17 @@ void Software::createInventoryAssociation(bool isRunning,
     if (isRunning)
     {
         debug("{SWID}: creating 'running' association to {OBJPATH}", "SWID",
-              swid, "OBJPATH", objectPath);
+              swid, "OBJPATH", endpoint);
         std::tuple<std::string, std::string, std::string> assocRunning = {
-            "running", "ran_on", objectPath};
+            "running", "ran_on", endpoint};
         assocs.push_back(assocRunning);
     }
     else
     {
         debug("{SWID}: creating 'activating' association to {OBJPATH}", "SWID",
-              swid, "OBJPATH", objectPath);
+              swid, "OBJPATH", endpoint);
         std::tuple<std::string, std::string, std::string> assocActivating = {
-            "activating", "activated_on", objectPath};
+            "activating", "activated_on", endpoint};
         assocs.push_back(assocActivating);
     }
 
@@ -149,12 +143,15 @@ void Software::createInventoryAssociation(bool isRunning,
     }
     else
     {
+        std::string path = objectPath;
         associationDefinitions =
             std::make_unique<SoftwareAssociationDefinitions>(
-                ctx, Software::objectPath.str.c_str(),
+                ctx, path.c_str(),
                 SoftwareAssociationDefinitions::properties_t{assocs});
         associationDefinitions->emit_added();
     }
+
+    co_return;
 }
 
 void Software::setVersion(const std::string& versionStr,
