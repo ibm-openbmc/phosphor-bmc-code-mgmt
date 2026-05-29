@@ -44,11 +44,15 @@ Software::Software(sdbusplus::async::context& ctx, Device& parent,
     SoftwareActivation(ctx, (baseObjPathSoftware + swid).c_str(),
                        Activation::properties_t{Activations::NotReady,
                                                 RequestedActivations::None}),
+<<<<<<< HEAD
     parentDevice(parent), swid(swid), objectPath(baseObjPathSoftware + swid),
 =======
     SoftwareActivation(ctx, (baseObjPathSoftware + swid).c_str()),
     objectPath(baseObjPathSoftware + swid), parentDevice(parent), swid(swid),
 >>>>>>> parent of df62819 (common: use aserver property constructor)
+=======
+    objectPath(baseObjPathSoftware + swid), parentDevice(parent), swid(swid),
+>>>>>>> parent of dbb7015 (common: make Software::objectPath const)
     ctx(ctx)
 {
     // initialize the members of our base class to prevent
