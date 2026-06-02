@@ -855,7 +855,8 @@ case "$1" in
         mmc_setprimary
         ;;
     mmc-mirroruboot)
-        mmc_mirroruboot
+        # mmc_mirroruboot
+        echo "Skipping mirror u-boot"
         ;;
     static-altfs)
         mount_static_alt "$2" "$3" "$4"
