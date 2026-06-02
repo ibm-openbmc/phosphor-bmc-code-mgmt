@@ -31,6 +31,8 @@ sdbusplus_dep = dependency('sdbusplus')
 sdbusplusplus_prog = find_program('sdbus++', native: true)
 sdbuspp_gen_meson_prog = find_program('sdbus++-gen-meson', native: true)
 
+sdeventplus_dep = dependency('sdeventplus')
+
 pdi_dep = dependency('phosphor-dbus-interfaces')
 phosphor_logging_dep = dependency('phosphor-logging')
 
@@ -55,7 +57,7 @@ if not has_cereal
     cereal_dep = cereal_proj.dependency('cereal')
 endif
 
-deps = [cereal_dep, pdi_dep, phosphor_logging_dep, sdbusplus_dep]
+deps = [cereal_dep, pdi_dep, phosphor_logging_dep, sdbusplus_dep, sdeventplus_dep]
 
 ssl_dep = dependency('openssl')
 
