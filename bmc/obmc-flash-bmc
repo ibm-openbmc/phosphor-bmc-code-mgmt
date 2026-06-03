@@ -637,7 +637,7 @@ function get_scsi_boot_partitions() {
     boot0="$(find "/sys/class/scsi_device/${scsiPrefix}:1/device/block" -mindepth 1 -maxdepth 1 -exec basename {} \; 2>/dev/null | head -n1)"
     boot1="$(find "/sys/class/scsi_device/${scsiPrefix}:2/device/block" -mindepth 1 -maxdepth 1 -exec basename {} \; 2>/dev/null | head -n1)"
 
-    if [ -z "${boot0}" ] || [ -z "${boot1}" ]; then
+	if [ -z "${boot0}" ] || [ -z "${boot1}" ]; then
         echo "Failed to resolve scsi boot LUNs for ${parentBlock} (${scsiPrefix}:1/:2)" >&2
         return 1
     fi
@@ -655,11 +655,10 @@ function get_boot_partitions() {
 
 function mmc_update() {
     # Update u-boot if needed
-    bootPartitions="$(get_boot_partitions)" || return 1
-    read -r bootPartition _ <<< "${bootPartitions}"
-    if [ -z "${bootPartition}" ]; then
-        echo "Failed to resolve boot partition for mode ${MODE}" >&2
-        return 1
+    if [ "$MODE" == "ufs" ]; then
+        bootPartition=$(basename "$(readlink -f /dev/disk/by-path/*ufshc-scsi-0:0:0:1)")
+    else
+        bootPartition=$(basename "$(readlink -f /dev/disk/by-path/*sdhci-boot0)")
     fi
     echo "mmc_update storage mode: $MODE bootPartition: $bootPartition"
     devUBoot="/dev/${bootPartition}"
@@ -737,11 +736,12 @@ function mmc_setprimary() {
 }
 
 function mmc_mirroruboot() {
-    bootPartitions="$(get_boot_partitions)" || return 1
-    read -r storage_boot0 storage_boot1 <<< "${bootPartitions}"
-    if [ -z "${storage_boot0}" ] || [ -z "${storage_boot1}" ]; then
-        echo "Failed to resolve mirrored boot partitions for mode ${MODE}" >&2
-        return 1
+    if [ "$MODE" == "ufs" ]; then
+        storage_boot0=$(basename "$(readlink -f /dev/disk/by-path/*ufshc-scsi-0:0:0:1)")
+        storage_boot1=$(basename "$(readlink -f /dev/disk/by-path/*ufshc-scsi-0:0:0:2)")
+    else
+        storage_boot0=$(basename "$(readlink -f /dev/disk/by-path/*sdhci-boot0)")
+        storage_boot1=$(basename "$(readlink -f /dev/disk/by-path/*sdhci-boot1)")
     fi
     echo "mmc_mirroruboot storage mode: $MODE storage_boot0: $storage_boot0 storage_boot1: $storage_boot1"
     # Get current boot device; 0-primary_bootdev device; 1 - alt_bootdev
