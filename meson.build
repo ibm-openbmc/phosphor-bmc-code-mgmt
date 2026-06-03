@@ -76,12 +76,6 @@ unit_files = [
     'bmc/xyz.openbmc_project.Software.Version.service.in'
 ]
 
-if get_option('bmc-layout').contains('mmc')
-    unit_files += 'bmc/mmc/xyz.openbmc_project.Software.Version.service.in'
-else
-    unit_files += 'bmc/xyz.openbmc_project.Software.Version.service.in'
-endif
-
 image_updater_sources = files(
     'bmc/activation.cpp',
     'bmc/images.cpp',
