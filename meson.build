@@ -61,10 +61,36 @@ deps = [cereal_dep, pdi_dep, phosphor_logging_dep, sdbusplus_dep, sdeventplus_de
 
 ssl_dep = dependency('openssl')
 
-systemd_dep = dependency('systemd')
-systemd_system_unit_dir = systemd_dep.get_variable(
-    'systemd_system_unit_dir',
-    pkgconfig_define: ['prefix', get_option('prefix')],
+systemd = dependency('systemd')
+systemd_system_unit_dir = systemd.get_variable('systemdsystemunitdir')
+
+unit_files = [
+    'bmc/obmc-flash-bmc-setenv@.service.in',
+    'bmc/reboot-guard-disable.service.in',
+    'bmc/reboot-guard-enable.service.in',
+    'bmc/force-reboot.service.in',
+    'bmc/usr-local.mount.in',
+    'bmc/xyz.openbmc_project.Software.BMC.Updater.service.in',
+    'bmc/xyz.openbmc_project.Software.Download.service.in',
+    'bmc/xyz.openbmc_project.Software.Sync.service.in',
+    'bmc/xyz.openbmc_project.Software.Version.service.in'
+]
+
+if get_option('bmc-layout').contains('mmc')
+    unit_files += 'bmc/mmc/xyz.openbmc_project.Software.Version.service.in'
+else
+    unit_files += 'bmc/xyz.openbmc_project.Software.Version.service.in'
+endif
+
+image_updater_sources = files(
+    'bmc/activation.cpp',
+    'bmc/images.cpp',
+    'bmc/item_updater.cpp',
+    'bmc/item_updater_main.cpp',
+    'bmc/serialize.cpp',
+    'bmc/version.cpp',
+    'bmc/utils.cpp',
+    'bmc/msl_verify.cpp'
 )
 
 build_tests = get_option('tests')
