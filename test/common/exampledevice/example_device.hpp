@@ -61,6 +61,7 @@ class ExampleDevice : public Device
   public:
     using Device::softwareCurrent;
     using Device::softwarePending;
+    using Device::updateInProgress;
 
     static SoftwareConfig defaultConfig;
 

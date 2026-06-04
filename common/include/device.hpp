@@ -94,9 +94,9 @@ class Device
 
     sdbusplus::async::context& ctx;
 
-  private:
     bool updateInProgress = false;
 
+  private:
     // @param componentImage       component image as extracted from update pkg
     // @param componentImageSize   size of 'componentImage'
     // @param applyTime            when the update should be applied
