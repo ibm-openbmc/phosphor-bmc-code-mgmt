@@ -53,7 +53,7 @@ sdbusplus::async::task<std::optional<sdbusplus::object_path>>
         debug("inventory item at path {PATH}", "PATH", path);
 
         // check if their path is a parent of our path
-        if (objectPath.str.starts_with(path))
+        if (objectPath.parent_path() == path)
         {
             debug("found associated inventory item for {NAME}: {PATH}", "NAME",
                   configName, "PATH", path);
