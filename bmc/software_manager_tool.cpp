@@ -43,40 +43,36 @@ int main(int argc, char** argv)
     {
         std::ofstream outputFile("/tmp/ignore-machine-name");
     }
+    else if (!imagePath.empty())
+    {
+        fs::path sourceImagePath = fs::path{imagePath};
+
+        #ifdef START_UPDATE_DBUS_INTEFACE
+
+            sdbusplus::async::context ctx;
+            phosphor::software::manager::CodeUpdateManager manager(ctx, sourceImagePath);
+            ctx.run();
+
+        #else
+
+            // Dbus constructs
+            auto bus = sdbusplus::bus::new_default();
+
+            // Get a default event loop
+            auto event = sdeventplus::Event::get_default();
+
+            phosphor::software::manager::CodeUpdateManager manager(bus, event, sourceImagePath);
+
+            // Attach the bus to sd_event to service user requests
+            bus.attach_event(event.get(), SD_EVENT_PRIORITY_NORMAL);
+            event.loop();
+
+        #endif // START_UPDATE_DBUS_INTEFACE
+    }
     else
     {
         std::cout << app.help("", CLI::AppFormatMode::All) << std::endl;
     }
-
-    if (imagePath.empty())
-    {
-        lg2::error("The image path passed in is empty.");
-        return -1;
-    }
-
-    fs::path sourceImagePath = fs::path{imagePath};
-
-#ifdef START_UPDATE_DBUS_INTEFACE
-
-    sdbusplus::async::context ctx;
-    phosphor::software::manager::CodeUpdateManager manager(ctx, sourceImagePath);
-    ctx.run();
-
-#else
-
-    // Dbus constructs
-    auto bus = sdbusplus::bus::new_default();
-
-    // Get a default event loop
-    auto event = sdeventplus::Event::get_default();
-
-    phosphor::software::manager::CodeUpdateManager manager(bus, event, sourceImagePath);
-
-    // Attach the bus to sd_event to service user requests
-    bus.attach_event(event.get(), SD_EVENT_PRIORITY_NORMAL);
-    event.loop();
-
-#endif // START_UPDATE_DBUS_INTEFACE
 
     return 0;
 }
