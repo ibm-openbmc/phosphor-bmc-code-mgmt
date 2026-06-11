@@ -78,20 +78,12 @@ void minimum_ship_level::parse(const std::string& inpVersion,
 
 bool minimum_ship_level::verify(const std::string& versionManifest)
 {
-    auto isUninitialized = [](std::string mslStr) {
-        return (mslStr.empty() || (mslStr.front() == '\0') ||
-                isspace(mslStr.front()) || (mslStr.front() == '0'));
-    };
-
-    //  If there is no msl or mslRegex return upgrade is needed.
-    std::string msl{BMC_MSL};
-    std::string mslRegex{REGEX_BMC_MSL};
-
     // The MSL value was requested to be reset.
     if (std::filesystem::exists(resetFile))
     {
         // Predefined reset msl version string
         std::string resetStr{"fw1020.00-00"};
+        std::string mslRegex{REGEX_BMC_MSL};
         if (!mslRegex.empty())
         {
             std::smatch match;
@@ -114,12 +106,10 @@ bool minimum_ship_level::verify(const std::string& versionManifest)
         }
     }
 
-    if (msl.empty())
-    {
-        //  If the minimum level was not set as a compile-time option, check VPD
-        msl = readSystemKeyword();
-    }
-    if ((isUninitialized(msl)) || mslRegex.empty())
+    sync();
+
+    //  If there is no msl or mslRegex return upgrade is needed.
+    if (!enabled())
     {
         return true;
     }
@@ -127,6 +117,7 @@ bool minimum_ship_level::verify(const std::string& versionManifest)
     // Define mslVersion variable and populate in Version format
     // {major,minor,rev} using parse function.
 
+    std::string msl = getMinimumVersion();
     Version mslVersion = {0, 0, 0};
     parse(msl, mslVersion);
 
