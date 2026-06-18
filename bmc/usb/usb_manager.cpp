@@ -383,8 +383,9 @@ void USBManager::writeProgressSRC(const std::vector<uint8_t>& primArray,
         0,  0,  0,  32, 0,  32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
         32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32};
 
-    std::copy(secArr.begin(), secArr.begin() + refcodeSize,
-              secArr.begin() + refcodeBegin);
+    std::copy(primArray.begin(), primArray.begin() + refcodeSize,
+          secArr.begin() + refcodeBegin);
+
 
     setProgressSRC(std::make_tuple(primArray, secArr), bus);
 }
