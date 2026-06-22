@@ -637,7 +637,7 @@ function get_scsi_boot_partitions() {
     boot0="$(find "/sys/class/scsi_device/${scsiPrefix}:1/device/block" -mindepth 1 -maxdepth 1 -exec basename {} \; 2>/dev/null | head -n1)"
     boot1="$(find "/sys/class/scsi_device/${scsiPrefix}:2/device/block" -mindepth 1 -maxdepth 1 -exec basename {} \; 2>/dev/null | head -n1)"
 
-	if [ -z "${boot0}" ] || [ -z "${boot1}" ]; then
+    if [ -z "${boot0}" ] || [ -z "${boot1}" ]; then
         echo "Failed to resolve scsi boot LUNs for ${parentBlock} (${scsiPrefix}:1/:2)" >&2
         return 1
     fi
