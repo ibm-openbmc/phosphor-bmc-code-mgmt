@@ -40,20 +40,8 @@ Software::Software(sdbusplus::async::context& ctx, Device& parent) :
 
 Software::Software(sdbusplus::async::context& ctx, Device& parent,
                    const std::string& swid) :
-<<<<<<< HEAD
-    SoftwareActivation(ctx, (baseObjPathSoftware + swid).c_str(),
-                       Activation::properties_t{Activations::NotReady,
-                                                RequestedActivations::None}),
-<<<<<<< HEAD
-    parentDevice(parent), swid(swid), objectPath(baseObjPathSoftware + swid),
-=======
     SoftwareActivation(ctx, (baseObjPathSoftware + swid).c_str()),
     objectPath(baseObjPathSoftware + swid), parentDevice(parent), swid(swid),
->>>>>>> parent of df62819 (common: use aserver property constructor)
-=======
-    objectPath(baseObjPathSoftware + swid), parentDevice(parent), swid(swid),
->>>>>>> parent of dbb7015 (common: make Software::objectPath const)
-    ctx(ctx)
 {
     // initialize the members of our base class to prevent
     // "Conditional jump or move depends on uninitialised value(s)"
@@ -92,37 +80,13 @@ sdbusplus::async::task<> Software::createInventoryAssociations(bool isRunning)
     }
     catch (std::exception& e)
     {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        error("Failed to create association with {ERROR}", "ERROR", e.what());
-        co_return;
-=======
         error(e.what());
     }
-
-    if (!associationDefinitions)
-    {
-        std::string path = objectPath;
-        associationDefinitions =
-            std::make_unique<SoftwareAssociationDefinitions>(
-                ctx, path.c_str(),
-                SoftwareAssociationDefinitions::properties_t{{}});
->>>>>>> parent of d73d564 (common: create initial associations)
-    }
-
-    if (endpoint.empty())
-    {
-        co_return;
-=======
-        error(e.what());
-    }
-
     if (!associationDefinitions)
     {
         std::string path = objectPath;
         associationDefinitions =
             std::make_unique<SoftwareAssociationDefinitions>(ctx, path.c_str());
->>>>>>> parent of df62819 (common: use aserver property constructor)
     }
 
     std::vector<std::tuple<std::string, std::string, std::string>> assocs;
