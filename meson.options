@@ -45,7 +45,7 @@ option(
 
 option(
     'verify-update-access-key',
-    type: 'feature', 
+    type: 'feature',
     value: 'disabled',
     description: 'Enable verification of update access key.',
 )
@@ -112,8 +112,12 @@ option(
     value: 'enabled',
     description: 'Enable TPM software update support.',
 )
-option('verify-update-access-key', type: 'feature', value: 'enabled',
-    description: 'Enabled access key validation.')
+option(
+    'verify-update-access-key',
+    type: 'feature',
+    value: 'enabled',
+    description: 'Enabled access key validation.',
+)
 
 # Variables
 option(

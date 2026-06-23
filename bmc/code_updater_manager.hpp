@@ -31,7 +31,7 @@ class CodeUpdateManager
 #ifdef START_UPDATE_DBUS_INTEFACE
 
     explicit CodeUpdateManager(sdbusplus::async::context& ctx,
-                        const fs::path& sourceImagePath) :
+                               const fs::path& sourceImagePath) :
         ctx(ctx), sourceImagePath(sourceImagePath)
     {
         ctx.spawn(run());
@@ -52,19 +52,21 @@ class CodeUpdateManager
 
 #else
     explicit CodeUpdateManager(sdbusplus::bus_t& bus, sdeventplus::Event& event,
-                        const fs::path& sourceImagePath) :
+                               const fs::path& sourceImagePath) :
         bus(bus), event(event), isCLICodeUpdate(false),
-        fwUpdateMatcher(bus,
-                        MatchRules::interfacesAdded() +
-                            MatchRules::path("/xyz/openbmc_project/software"),
-                        std::bind(std::mem_fn(&CodeUpdateManager::updateActivation),
-                                  this, std::placeholders::_1)),
+        fwUpdateMatcher(
+            bus,
+            MatchRules::interfacesAdded() +
+                MatchRules::path("/xyz/openbmc_project/software"),
+            std::bind(std::mem_fn(&CodeUpdateManager::updateActivation), this,
+                      std::placeholders::_1)),
         sourceImagePath(sourceImagePath)
     {
         if (!run())
         {
-            lg2::error("Failed to FW Update via CLI, sourceImagePath:{SRCIMGPATH}",
-                       "SRCIMGPATH", sourceImagePath);
+            lg2::error(
+                "Failed to FW Update via CLI, sourceImagePath:{SRCIMGPATH}",
+                "SRCIMGPATH", sourceImagePath);
             event.exit(0);
         }
 
