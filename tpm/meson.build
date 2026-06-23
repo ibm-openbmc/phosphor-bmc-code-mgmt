@@ -6,7 +6,7 @@ executable(
     'tpm_device.cpp',
     'tpm2/tpm2.cpp',
     include_directories: [common_include, tpm_device_include],
-    dependencies: [libpldm_dep, phosphor_logging_dep, sdbusplus_dep],
+    dependencies: [libpldmcpp_dep, phosphor_logging_dep, sdbusplus_dep],
     link_with: [software_common_lib, libpldmutil],
     install: true,
     install_dir: get_option('libexecdir') / 'phosphor-code-mgmt',

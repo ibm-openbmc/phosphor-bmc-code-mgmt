@@ -31,7 +31,7 @@ class TestEventEntry : public EventEntryIntf
   public:
     TestEventEntry(sdbusplus::async::context& ctx,
                    const sdbusplus::object_path& path) :
-        EventEntryIntf(ctx, path)
+        EventEntryIntf(ctx, path.str.c_str())
     {}
 
     static auto method_call(get_entry_t /*unused*/)
@@ -59,7 +59,7 @@ class TestEventServer : public EventServerIntf
   public:
     TestEventServer(sdbusplus::async::context& ctx,
                     const sdbusplus::object_path& path) :
-        EventServerIntf(ctx, path), ctx(ctx)
+        EventServerIntf(ctx, path.str.c_str()), ctx(ctx)
     {}
 
     auto method_call(create_t /*unused*/, auto message, auto /*unused*/,
@@ -115,7 +115,8 @@ class FWUpdateEventsTest : public ::testing::Test
     sdbusplus::server::manager_t manager;
 
     FWUpdateEventsTest() :
-        events(ctx), eventServer(ctx, loggingPath), manager(ctx, loggingPath)
+        events(ctx), eventServer(ctx, loggingPath),
+        manager(ctx, loggingPath.str.c_str())
     {
         ctx.request_name(serviceName);
     }
