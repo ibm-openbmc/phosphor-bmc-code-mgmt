@@ -88,8 +88,8 @@ sdbusplus::async::task<> testSoftwareAssociation(
             .service(busName)
             .path(objPathCurrentSoftware);
 
-    reinterpret_cast<ExampleSoftware*>(device->softwareCurrent.get())
-        ->createInventoryAssociation(createRunningAssoc, exampleEndpoint);
+    co_await reinterpret_cast<ExampleSoftware*>(device->softwareCurrent.get())
+        ->createInventoryAssociations(createRunningAssoc);
 
     try
     {

@@ -27,7 +27,7 @@ SoftwareUpdate::SoftwareUpdate(
     Software& software,
     const std::set<RequestedApplyTimes>& allowedApplyTimes) :
     sdbusplus::aserver::xyz::openbmc_project::software::Update<SoftwareUpdate>(
-        ctx, path),
+        ctx, path.str.c_str()),
     software(software), allowedApplyTimes(allowedApplyTimes)
 {
     emit_added();

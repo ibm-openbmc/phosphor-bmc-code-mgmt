@@ -26,7 +26,7 @@ executable(
         phosphor_logging_dep,
         pdi_dep,
         boost_dep,
-        libpldm_dep,
+        libpldmcpp_dep,
         libi2c_dep,
     ],
     link_with: [software_common_lib, libpldmutil, libi2c_dev],

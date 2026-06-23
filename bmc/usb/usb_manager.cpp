@@ -46,12 +46,14 @@ bool USBManager::copyImage()
                 break;
             }
 
+#ifndef START_UPDATE_DBUS_INTEFACE
             if (!setUSBProgress())
             {
                 writeSuccess(bus);
                 lg2::info("USB Code Update: Completed updating both sides");
                 break;
             }
+#endif
             try
             {
                 imageDstPath = dstPath;

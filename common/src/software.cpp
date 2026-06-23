@@ -42,6 +42,7 @@ Software::Software(sdbusplus::async::context& ctx, Device& parent,
                    const std::string& swid) :
     SoftwareActivation(ctx, (baseObjPathSoftware + swid).c_str()),
     objectPath(baseObjPathSoftware + swid), parentDevice(parent), swid(swid),
+    ctx(ctx)
 {
     // initialize the members of our base class to prevent
     // "Conditional jump or move depends on uninitialised value(s)"
@@ -91,7 +92,7 @@ sdbusplus::async::task<> Software::createInventoryAssociations(bool isRunning)
 
     std::vector<std::tuple<std::string, std::string, std::string>> assocs;
 
-    if (endpoint.empty())
+    if (!endpoint.has_value())
     {
         associationDefinitions->associations(assocs);
         co_return;
@@ -100,17 +101,17 @@ sdbusplus::async::task<> Software::createInventoryAssociations(bool isRunning)
     if (isRunning)
     {
         debug("{SWID}: creating 'running' association to {OBJPATH}", "SWID",
-              swid, "OBJPATH", endpoint);
+              swid, "OBJPATH", endpoint.value().str);
         std::tuple<std::string, std::string, std::string> assocRunning = {
-            "running", "ran_on", endpoint};
+            "running", "ran_on", endpoint.value().str};
         assocs.push_back(assocRunning);
     }
     else
     {
         debug("{SWID}: creating 'activating' association to {OBJPATH}", "SWID",
-              swid, "OBJPATH", endpoint);
+              swid, "OBJPATH", endpoint.value().str);
         std::tuple<std::string, std::string, std::string> assocActivating = {
-            "activating", "activated_on", endpoint};
+            "activating", "activated_on", endpoint.value().str};
         assocs.push_back(assocActivating);
     }
 
@@ -159,7 +160,8 @@ void Software::setActivationBlocksTransition(bool enabled)
     }
 
     activationBlocksTransition =
-        std::make_unique<SoftwareActivationBlocksTransition>(ctx, path.c_str());
+        std::make_unique<SoftwareActivationBlocksTransition>(
+            ctx, objectPath.str.c_str());
 }
 
 void Software::setActivation(SoftwareActivation::Activations act)

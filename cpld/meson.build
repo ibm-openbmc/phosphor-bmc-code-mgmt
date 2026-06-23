@@ -23,7 +23,7 @@ exe = executable(
         pdi_dep,
         phosphor_logging_dep,
         sdbusplus_dep,
-        libpldm_dep,
+        libpldmcpp_dep,
         libi2c_dep,
         libgpiod_dep,
         ssl_dep,
