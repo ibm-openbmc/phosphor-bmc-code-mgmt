@@ -25,9 +25,8 @@ int main(int argc, char** argv)
     app.add_flag(
         "--ignore_machine_name", ignoreMachineName,
         "Ignore the machine type to allow a firmware upgrade in the lab. For lab and testing purposes only.");
-    app.add_option(
-        "--codeupdate", imagePath,
-        "Perform code update with new image on specified path");
+    app.add_option("--codeupdate", imagePath,
+                   "Perform code update with new image on specified path");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -47,27 +46,29 @@ int main(int argc, char** argv)
     {
         fs::path sourceImagePath = fs::path{imagePath};
 
-        #ifdef START_UPDATE_DBUS_INTEFACE
+#ifdef START_UPDATE_DBUS_INTEFACE
 
-            sdbusplus::async::context ctx;
-            phosphor::software::manager::CodeUpdateManager manager(ctx, sourceImagePath);
-            ctx.run();
+        sdbusplus::async::context ctx;
+        phosphor::software::manager::CodeUpdateManager manager(
+            ctx, sourceImagePath);
+        ctx.run();
 
-        #else
+#else
 
-            // Dbus constructs
-            auto bus = sdbusplus::bus::new_default();
+        // Dbus constructs
+        auto bus = sdbusplus::bus::new_default();
 
-            // Get a default event loop
-            auto event = sdeventplus::Event::get_default();
+        // Get a default event loop
+        auto event = sdeventplus::Event::get_default();
 
-            phosphor::software::manager::CodeUpdateManager manager(bus, event, sourceImagePath);
+        phosphor::software::manager::CodeUpdateManager manager(
+            bus, event, sourceImagePath);
 
-            // Attach the bus to sd_event to service user requests
-            bus.attach_event(event.get(), SD_EVENT_PRIORITY_NORMAL);
-            event.loop();
+        // Attach the bus to sd_event to service user requests
+        bus.attach_event(event.get(), SD_EVENT_PRIORITY_NORMAL);
+        event.loop();
 
-        #endif // START_UPDATE_DBUS_INTEFACE
+#endif // START_UPDATE_DBUS_INTEFACE
     }
     else
     {

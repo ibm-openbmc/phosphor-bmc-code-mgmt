@@ -57,7 +57,13 @@ if not has_cereal
     cereal_dep = cereal_proj.dependency('cereal')
 endif
 
-deps = [cereal_dep, pdi_dep, phosphor_logging_dep, sdbusplus_dep, sdeventplus_dep]
+deps = [
+    cereal_dep,
+    pdi_dep,
+    phosphor_logging_dep,
+    sdbusplus_dep,
+    sdeventplus_dep,
+]
 
 ssl_dep = dependency('openssl')
 
@@ -73,20 +79,11 @@ unit_files = [
     'bmc/xyz.openbmc_project.Software.BMC.Updater.service.in',
     'bmc/xyz.openbmc_project.Software.Download.service.in',
     'bmc/xyz.openbmc_project.Software.Sync.service.in',
-    'bmc/xyz.openbmc_project.Software.Version.service.in'
+    'bmc/xyz.openbmc_project.Software.Version.service.in',
 ]
 
-image_updater_sources = files(
-    'bmc/activation.cpp',
-    'bmc/images.cpp',
-    'bmc/item_updater.cpp',
-    'bmc/item_updater_main.cpp',
-    'bmc/serialize.cpp',
-    'bmc/version.cpp',
-    'bmc/utils.cpp',
-    'bmc/msl_verify.cpp',
-    'bmc/lid.cpp'
-)
+image_updater_sources = files('bmc/activation.cpp', 'bmc/images.cpp', 'bmc/item_updater.cpp', 'bmc/item_updater_main.cpp', 'bmc/lid.cpp'
+, 'bmc/msl_verify.cpp', 'bmc/serialize.cpp', 'bmc/utils.cpp', 'bmc/version.cpp')
 
 build_tests = get_option('tests')
 

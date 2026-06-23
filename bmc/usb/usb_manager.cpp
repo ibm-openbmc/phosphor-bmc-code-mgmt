@@ -287,8 +287,8 @@ void USBManager::listenActivationState(const std::string& path)
             MatchRules::propertiesChanged(
                 path, "xyz.openbmc_project.Software.Activation"),
             [this](sdbusplus::message::message& msg) {
-        activationChangeEvent(msg);
-    });
+                activationChangeEvent(msg);
+            });
 }
 
 void USBManager::activationChangeEvent(sdbusplus::message::message& msg)
@@ -384,8 +384,7 @@ void USBManager::writeProgressSRC(const std::vector<uint8_t>& primArray,
         32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32};
 
     std::copy(primArray.begin(), primArray.begin() + refcodeSize,
-          secArr.begin() + refcodeBegin);
-
+              secArr.begin() + refcodeBegin);
 
     setProgressSRC(std::make_tuple(primArray, secArr), bus);
 }

@@ -2,9 +2,9 @@
 
 #include "activation.hpp"
 #include "item_updater_helper.hpp"
+#include "lid.hpp"
 #include "msl_verify.hpp"
 #include "update_manager.hpp"
-#include "lid.hpp"
 #include "version.hpp"
 #include "xyz/openbmc_project/Collection/DeleteAll/server.hpp"
 

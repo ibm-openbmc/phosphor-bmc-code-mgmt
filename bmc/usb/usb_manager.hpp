@@ -210,7 +210,7 @@ class USBManager
      *  @return Success or Fail
      */
     bool copyImage();
-   
+
     /** The USB device path. */
     const fs::path& devicePath;
 
@@ -219,7 +219,6 @@ class USBManager
 
     /** The destination path for copied over image file */
     fs::path imageDstPath;
-   
 };
 
 } // namespace usb
