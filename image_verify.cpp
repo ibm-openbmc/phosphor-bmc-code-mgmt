@@ -660,8 +660,32 @@ inline EVP_PKEY_Ptr Signature::createPublicKey(const fs::path& publicKey)
         elog<InternalFailure>();
     }
 
-    return {PEM_read_bio_PUBKEY(keyBio.get(), nullptr, nullptr, nullptr),
-            &::EVP_PKEY_free};
+    EVP_PKEY* pkey =
+        PEM_read_bio_PUBKEY(keyBio.get(), nullptr, nullptr, nullptr);
+
+    // ML-DSA-87 key size is 2592
+    if (!pkey && size == 2592)
+    {
+        EVP_PKEY_CTX* ctx =
+            EVP_PKEY_CTX_new_from_name(nullptr, "ML-DSA-87", nullptr);
+        if (ctx)
+        {
+            OSSL_PARAM params[] = {OSSL_PARAM_construct_octet_string(
+                                       "pub", const_cast<void*>(data()), size),
+                                   OSSL_PARAM_construct_end()};
+
+            if (EVP_PKEY_fromdata_init(ctx) > 0 &&
+                EVP_PKEY_fromdata(ctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) > 0)
+            {
+                EVP_PKEY_CTX_free(ctx);
+                return {pkey, &::EVP_PKEY_free};
+            }
+
+            EVP_PKEY_CTX_free(ctx);
+        }
+    }
+
+    return {pkey, &::EVP_PKEY_free};
 }
 
 CustomMap Signature::mapFile(const fs::path& path, size_t size)
