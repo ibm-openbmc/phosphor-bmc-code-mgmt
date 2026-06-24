@@ -19,7 +19,7 @@ using namespace phosphor::logging;
 using InternalFailure =
     sdbusplus::error::xyz::openbmc_project::common::InternalFailure;
 
-constexpr auto resetFile = "/tmp/reset-msl";
+[[maybe_unused]] constexpr auto resetFile = "/tmp/reset-msl";
 
 int minimum_ship_level::compare(const Version& versionToCompare,
                                 const Version& mslVersion)

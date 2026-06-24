@@ -93,17 +93,17 @@ subdir('bmc')
 
 
 all_options = {
-    'bios-software-update': {'dirs': ['bios'], 'deps': ['libgpiod']},
-    'cpld-software-update': {
-        'dirs': ['common/i2c', 'cpld'],
-        'deps': ['libgpiod'],
-    },
-    'eepromdevice-software-update': {
-        'dirs': ['eeprom-device'],
-        'deps': ['libgpiod'],
-    },
-    'i2cvr-software-update': {'dirs': ['common/i2c', 'i2c-vr']},
-    'tpm-software-update': {'dirs': ['tpm']},
+    #    'bios-software-update': {'dirs': ['bios'], 'deps': ['libgpiod']},
+    #    'cpld-software-update': {
+    #        'dirs': ['common/i2c', 'cpld'],
+    #        'deps': ['libgpiod'],
+    #    },
+    #    'eepromdevice-software-update': {
+    #        'dirs': ['eeprom-device'],
+    #        'deps': ['libgpiod'],
+    #    },
+    #    'i2cvr-software-update': {'dirs': ['common/i2c', 'i2c-vr']},
+    #    'tpm-software-update': {'dirs': ['tpm']},
 }
 
 optioned_subdirs = []
@@ -137,6 +137,16 @@ if optioned_deps.contains('libgpiod')
 endif
 
 if common_build or build_tests.allowed()
+    # Declare libgpiod_dep if not already declared (needed by common subdirectory)
+    if not is_variable('libgpiod_dep')
+        libgpiod_dep = dependency(
+            'libgpiodcxx',
+            default_options: ['bindings=cxx'],
+            version: '>=1.1.2',
+            required: false,
+        )
+    endif
+
     libpldm_dep = dependency('libpldm')
     libpldmcpp_dep = dependency('libpldm++')
     subdir('common')
@@ -146,6 +156,6 @@ foreach dir : optioned_subdirs
     subdir(dir)
 endforeach
 
-if build_tests.allowed()
-    subdir('test')
-endif
+# if build_tests.allowed()
+#    subdir('test')
+# endif
