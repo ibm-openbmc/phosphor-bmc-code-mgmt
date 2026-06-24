@@ -31,6 +31,8 @@ sdbusplus_dep = dependency('sdbusplus')
 sdbusplusplus_prog = find_program('sdbus++', native: true)
 sdbuspp_gen_meson_prog = find_program('sdbus++-gen-meson', native: true)
 
+sdeventplus_dep = dependency('sdeventplus')
+
 pdi_dep = dependency('phosphor-dbus-interfaces')
 phosphor_logging_dep = dependency('phosphor-logging')
 
@@ -55,15 +57,33 @@ if not has_cereal
     cereal_dep = cereal_proj.dependency('cereal')
 endif
 
-deps = [cereal_dep, pdi_dep, phosphor_logging_dep, sdbusplus_dep]
+deps = [
+    cereal_dep,
+    pdi_dep,
+    phosphor_logging_dep,
+    sdbusplus_dep,
+    sdeventplus_dep,
+]
 
 ssl_dep = dependency('openssl')
 
-systemd_dep = dependency('systemd')
-systemd_system_unit_dir = systemd_dep.get_variable(
-    'systemd_system_unit_dir',
-    pkgconfig_define: ['prefix', get_option('prefix')],
-)
+systemd = dependency('systemd')
+systemd_system_unit_dir = systemd.get_variable('systemdsystemunitdir')
+
+unit_files = [
+    'bmc/obmc-flash-bmc-setenv@.service.in',
+    'bmc/reboot-guard-disable.service.in',
+    'bmc/reboot-guard-enable.service.in',
+    'bmc/force-reboot.service.in',
+    'bmc/usr-local.mount.in',
+    'bmc/xyz.openbmc_project.Software.BMC.Updater.service.in',
+    'bmc/xyz.openbmc_project.Software.Download.service.in',
+    'bmc/xyz.openbmc_project.Software.Sync.service.in',
+    'bmc/xyz.openbmc_project.Software.Version.service.in',
+]
+
+image_updater_sources = files('bmc/activation.cpp', 'bmc/images.cpp', 'bmc/item_updater.cpp', 'bmc/item_updater_main.cpp', 'bmc/lid.cpp'
+, 'bmc/msl_verify.cpp', 'bmc/serialize.cpp', 'bmc/utils.cpp', 'bmc/version.cpp')
 
 build_tests = get_option('tests')
 

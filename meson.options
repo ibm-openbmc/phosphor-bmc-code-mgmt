@@ -6,9 +6,17 @@
 option(
     'bmc-layout',
     type: 'combo',
-    choices: ['static', 'ubi', 'mmc'],
+    choices: ['static', 'ubi', 'mmc', 'ufs'],
     value: 'static',
     description: 'The BMC layout type.',
+)
+
+option(
+    'mmc-storage-mode',
+    type: 'combo',
+    choices: ['mmc', 'ufs'],
+    value: 'mmc',
+    description: 'The BMC mass storage type.',
 )
 
 # Features
@@ -33,6 +41,20 @@ option(
     type: 'feature',
     value: 'enabled',
     description: 'Enable image signature validation.',
+)
+
+option(
+    'verify-update-access-key',
+    type: 'feature',
+    value: 'disabled',
+    description: 'Enable verification of update access key.',
+)
+
+option(
+    'software-manager-tool',
+    type: 'feature',
+    value: 'enabled',
+    description: 'Enable software manager tool for direct code updates.',
 )
 
 option(
@@ -89,6 +111,12 @@ option(
     type: 'feature',
     value: 'enabled',
     description: 'Enable TPM software update support.',
+)
+option(
+    'verify-update-access-key',
+    type: 'feature',
+    value: 'enabled',
+    description: 'Enabled access key validation.',
 )
 
 # Variables
