@@ -1,6 +1,6 @@
 #include "tpm_software_manager.hpp"
 
-#include "common/include/dbus_helper.hpp"
+#include "../common/include/dbus_helper.hpp"
 #include "tpm_device.hpp"
 
 #include <phosphor-logging/lg2.hpp>

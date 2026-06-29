@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/include/i2c/i2c.hpp"
-#include "i2c-vr/vr.hpp"
+#include "../../common/include/i2c/i2c.hpp"
+#include "../../i2c-vr/vr.hpp"
 
 #include <sdbusplus/async.hpp>
 
@@ -52,10 +52,11 @@ class ISL69269 : public VoltageRegulator
         uint32_t crcExp;
         struct Data pData[1024];
     };
-    sdbusplus::async::task<bool> dmaReadWrite(uint8_t* reg, uint8_t* resp);
+    sdbusplus::async::task<bool> dmaReadWrite(const uint8_t* reg,
+                                              uint8_t* resp);
     sdbusplus::async::task<bool> getRemainingWrites(uint8_t* remain);
     sdbusplus::async::task<bool> getHexMode(uint8_t* mode);
-    sdbusplus::async::task<bool> getDeviceId(uint32_t* deviceId);
+    sdbusplus::async::task<bool> getDeviceId(const uint32_t* deviceId);
     sdbusplus::async::task<bool> getDeviceRevision(uint32_t* revision);
     sdbusplus::async::task<bool> program();
     sdbusplus::async::task<bool> getProgStatus();

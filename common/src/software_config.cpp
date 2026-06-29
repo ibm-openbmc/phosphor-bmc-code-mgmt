@@ -1,4 +1,4 @@
-#include "common/include/software_config.hpp"
+#include "../../common/include/software_config.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 #include <xyz/openbmc_project/ObjectMapper/client.hpp>

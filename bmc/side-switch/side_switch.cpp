@@ -19,7 +19,7 @@ bool sideSwitchNeeded(sdbusplus::bus_t& bus)
     std::string fwRunningVersionPath;
     uint8_t fwRunningPriority = 0;
 
-    auto isPurposeBMC = [&bus](std::string versionPath) {
+    auto isPurposeBMC = [&bus](const std::string& versionPath) {
         using versionServer =
             sdbusplus::server::xyz::openbmc_project::software::Version;
         auto purposeStr = utils::getProperty<std::string>(
@@ -124,7 +124,7 @@ bool sideSwitchNeeded(sdbusplus::bus_t& bus)
             if (isPurposeBMC(fwPath))
             {
                 uint8_t thisPathPri = utils::getProperty<uint8_t>(
-                    bus, fwPath.c_str(),
+                    bus, fwPath,
                     "xyz.openbmc_project.Software.RedundancyPriority",
                     "Priority");
 

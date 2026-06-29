@@ -95,7 +95,7 @@ void Lid::validate(std::string filePath)
     efile.read(reinterpret_cast<char*>(&adfCount), sizeof(adfCount));
 
     // Loop through the ADFs to find respective ADF
-    for (uint8_t i = 0; i < htonl(adfCount); i++)
+    for (uint32_t i = 0; i < htonl(adfCount); i++)
     {
         // Store the offset, this is the beginning of an ADF section
         auto adfStartOffset = efile.tellg();
@@ -269,7 +269,7 @@ void Lid::createVersionInterface()
 
     auto version = "null";
 
-    auto dummyErase = [](std::string /*entryId*/) {
+    auto dummyErase = [](const std::string& /*entryId*/) {
         // Do nothing;
     };
 

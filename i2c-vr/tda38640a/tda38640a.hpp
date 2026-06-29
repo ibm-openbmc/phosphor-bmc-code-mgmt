@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/include/i2c/i2c.hpp"
-#include "i2c-vr/vr.hpp"
+#include "../../common/include/i2c/i2c.hpp"
+#include "../../i2c-vr/vr.hpp"
 
 #include <sdbusplus/async.hpp>
 

@@ -116,9 +116,11 @@ TEST_F(SoftwareAssocTest, TestSoftwareAssociationRunning)
     ctx.run();
 }
 
+// NOLINTBEGIN(clang-analyzer-core.uninitialized.Branch)
 TEST_F(SoftwareAssocTest, TestSoftwareAssociationActivating)
 {
     ctx.spawn(testSoftwareAssociation(ctx, device, objPathCurrentSoftware,
                                       busName, false, "activating"));
     ctx.run();
 }
+// NOLINTEND(clang-analyzer-core.uninitialized.Branch)

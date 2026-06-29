@@ -1,5 +1,5 @@
+#include "../../../common/include/software.hpp"
 #include "../exampledevice/example_device.hpp"
-#include "common/include/software.hpp"
 #include "test/create_package/create_pldm_fw_package.hpp"
 
 #include <sys/mman.h>

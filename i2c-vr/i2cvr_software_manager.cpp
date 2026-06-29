@@ -1,7 +1,7 @@
 #include "i2cvr_software_manager.hpp"
 
-#include "common/include/dbus_helper.hpp"
-#include "common/include/software_manager.hpp"
+#include "../common/include/dbus_helper.hpp"
+#include "../common/include/software_manager.hpp"
 #include "i2cvr_device.hpp"
 #include "vr.hpp"
 

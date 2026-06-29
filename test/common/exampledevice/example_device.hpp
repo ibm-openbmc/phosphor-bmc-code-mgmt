@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/include/device.hpp"
-#include "common/include/software_manager.hpp"
+#include "../../common/include/device.hpp"
+#include "../../common/include/software_manager.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async.hpp>

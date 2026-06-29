@@ -21,6 +21,11 @@ class UpdateAccessKey
   public:
     UpdateAccessKey() = delete;
     ~UpdateAccessKey() = default;
+
+    UpdateAccessKey(const UpdateAccessKey&) = delete;
+    UpdateAccessKey& operator=(const UpdateAccessKey&) = delete;
+    UpdateAccessKey(UpdateAccessKey&&) = delete;
+    UpdateAccessKey& operator=(UpdateAccessKey&&) = delete;
     /**
      * @brief Constructs UpdateAccessKey.
      * @param[in]  manifestPath - manifest path
@@ -49,7 +54,7 @@ class UpdateAccessKey
                 bool isOneOff);
 
     /** @brief Syncs the update access key found in VPD and flash memory */
-    void sync();
+    static void sync();
 
   private:
     /** @brief Reads the D8 property from the inventory manager to retirieve the
@@ -57,20 +62,21 @@ class UpdateAccessKey
      *  @param[in] objectPath - D-Bus object path
      *  @return [out] - value of the property
      */
-    std::string getUpdateAccessExpirationDate(const std::string& objectPath);
+    static std::string getUpdateAccessExpirationDate(
+        const std::string& objectPath);
 
     /** @brief Uses the VPD manager to write to the update access key property
      *  @param[in] key - uak date to write
      *  @param[in] objectPath - D-Bus object path
      */
-    void writeUpdateAccessExpirationDate(const std::string& date,
-                                         const std::string& objectPath);
+    static void writeUpdateAccessExpirationDate(const std::string& date,
+                                                const std::string& objectPath);
 
     /** @brief Manifest file path */
     fs::path manifestPath;
 
-    std::string buildIDTrunc{};
-    std::string expirationDate{};
+    std::string buildIDTrunc;
+    std::string expirationDate;
 };
 
 } // namespace image

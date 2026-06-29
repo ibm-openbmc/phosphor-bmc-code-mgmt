@@ -1,5 +1,5 @@
 #pragma once
-#include "common/include/i2c/i2c.hpp"
+#include "../../common/include/i2c/i2c.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 

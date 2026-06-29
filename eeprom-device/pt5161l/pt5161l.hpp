@@ -1,6 +1,6 @@
 #pragma once
 
-#include "eeprom-device/eeprom_device_version.hpp"
+#include "../../eeprom-device/eeprom_device_version.hpp"
 
 class PT5161LDeviceVersion : public DeviceVersion
 {

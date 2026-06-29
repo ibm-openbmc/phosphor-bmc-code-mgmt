@@ -45,6 +45,7 @@ void Helper::cleanup()
     bus.call_noreply(method);
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void Helper::factoryReset()
 {
     // Mark the read-write partition for recreation upon reboot.

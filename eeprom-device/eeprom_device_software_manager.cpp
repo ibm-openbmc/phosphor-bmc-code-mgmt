@@ -1,6 +1,6 @@
 #include "eeprom_device_software_manager.hpp"
 
-#include "common/include/dbus_helper.hpp"
+#include "../common/include/dbus_helper.hpp"
 #include "eeprom_device.hpp"
 
 #include <phosphor-logging/lg2.hpp>

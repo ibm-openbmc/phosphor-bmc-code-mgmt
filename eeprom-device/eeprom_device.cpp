@@ -1,9 +1,9 @@
 #include "eeprom_device.hpp"
 
-#include "common/include/software.hpp"
-#include "common/include/utils.hpp"
+#include "../common/include/gpio_controller.hpp"
+#include "../common/include/software.hpp"
+#include "../common/include/utils.hpp"
 
-#include <gpio_controller.hpp>
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async.hpp>
 #include <sdbusplus/message.hpp>

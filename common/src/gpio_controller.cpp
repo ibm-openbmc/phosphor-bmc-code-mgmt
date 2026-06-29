@@ -1,4 +1,4 @@
-#include "gpio_controller.hpp"
+#include "../common/include/gpio_controller.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 

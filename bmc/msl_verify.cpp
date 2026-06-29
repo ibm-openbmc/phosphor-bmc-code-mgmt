@@ -250,11 +250,7 @@ bool minimum_ship_level::enabled()
 
     std::string msl = getMinimumVersion();
     std::string mslRegex{REGEX_BMC_MSL};
-    if (!(isUninitialized(msl)) && !mslRegex.empty())
-    {
-        return true;
-    }
-    return false;
+    return !(isUninitialized(msl)) && !mslRegex.empty();
 }
 
 std::string minimum_ship_level::getMinimumVersion()
@@ -307,7 +303,7 @@ void minimum_ship_level::sync()
     auto flashValue = readFlashValue();
     if (!isUninitialized(msl))
     {
-        if (msl.compare(flashValue) != 0)
+        if (msl != flashValue)
         {
             // Write VPD value to flash
             writeFlashValue(msl);

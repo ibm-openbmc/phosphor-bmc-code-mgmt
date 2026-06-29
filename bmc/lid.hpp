@@ -40,12 +40,12 @@ class Lid : public LidInherit
      *
      * @param[in] filePath - file path to the Marker LID file
      */
-    void validate(std::string filePath);
+    void validate(std::string filePath) override;
     /**
      * @brief Create a image tar ball using lid files provided by host during
      * inband code update
      */
-    void assembleCodeUpdateImage();
+    void assembleCodeUpdateImage() override;
 
   private:
     bool isOneOff = false;

@@ -1,6 +1,6 @@
 #include "mpq87xx.hpp"
 
-#include "common/include/utils.hpp"
+#include "../../common/include/utils.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 
@@ -200,6 +200,7 @@ sdbusplus::async::task<bool> MPQ87XX::verifyCRC()
     co_return crcMatch;
 }
 
+// NOLINTBEGIN(clang-analyzer-core.uninitialized.Branch)
 sdbusplus::async::task<bool> MPQ87XX::verifyImage(const uint8_t* image,
                                                   size_t imageSize)
 {
@@ -223,6 +224,7 @@ sdbusplus::async::task<bool> MPQ87XX::verifyImage(const uint8_t* image,
 
     co_return true;
 }
+// NOLINTEND(clang-analyzer-core.uninitialized.Branch)
 
 sdbusplus::async::task<bool> MPQ87XX::getCRC(uint32_t* checksum)
 {

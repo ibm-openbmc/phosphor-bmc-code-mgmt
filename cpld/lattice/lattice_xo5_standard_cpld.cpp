@@ -302,6 +302,7 @@ sdbusplus::async::task<bool> LatticeXO5StandardCPLD::programDone()
     co_return true;
 }
 
+// NOLINTBEGIN(clang-analyzer-core.uninitialized.Branch)
 sdbusplus::async::task<bool> LatticeXO5StandardCPLD::prepareUpdate(
     const uint8_t* image, size_t imageSize)
 {
@@ -330,6 +331,7 @@ sdbusplus::async::task<bool> LatticeXO5StandardCPLD::prepareUpdate(
 
     co_return true;
 }
+// NOLINTEND(clang-analyzer-core.uninitialized.Branch)
 
 sdbusplus::async::task<bool> LatticeXO5StandardCPLD::doErase()
 {

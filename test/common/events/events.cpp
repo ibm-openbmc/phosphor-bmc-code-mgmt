@@ -1,7 +1,7 @@
 // This test verifies that firmware update events and errors are correctly
 // committed to the phosphor-logging service via lg2::commit, and that
 // errors can be resolved via lg2::resolve when deasserted.
-#include "common/include/events.hpp"
+#include "../../../common/include/events.hpp"
 
 #include <sdbusplus/async.hpp>
 #include <xyz/openbmc_project/Logging/Create/aserver.hpp>
@@ -248,8 +248,10 @@ TEST_F(FWUpdateEventsTest, TestUpdateSuccessful)
     ctx.run();
 }
 
+// NOLINTBEGIN(clang-analyzer-core.uninitialized.Branch)
 TEST_F(FWUpdateEventsTest, TestResetRequired)
 {
     ctx.spawn(testResetRequired());
     ctx.run();
 }
+// NOLINTEND(clang-analyzer-core.uninitialized.Branch)

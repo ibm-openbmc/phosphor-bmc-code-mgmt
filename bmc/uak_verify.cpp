@@ -258,7 +258,7 @@ void UpdateAccessKey::sync()
 
     if (!isUninitialized(backplaneDate))
     {
-        if (backplaneDate.compare(flashDate) != 0)
+        if (backplaneDate != flashDate)
         {
             // Write backplane date to flash memory and panel date
             if (!fs::is_directory(flashDateFilePath.parent_path()))
@@ -273,7 +273,7 @@ void UpdateAccessKey::sync()
                 outputFile.close();
             }
         }
-        if ((backplaneDate.compare(panelDate) != 0) && !panelObjectPath.empty())
+        if ((backplaneDate != panelDate) && !panelObjectPath.empty())
         {
             writeUpdateAccessExpirationDate(backplaneDate, panelObjectPath);
         }
@@ -285,7 +285,7 @@ void UpdateAccessKey::sync()
         {
             writeUpdateAccessExpirationDate(flashDate, motherboardObjectPath);
         }
-        if ((flashDate.compare(panelDate) != 0) && !panelObjectPath.empty())
+        if ((flashDate != panelDate) && !panelObjectPath.empty())
         {
             writeUpdateAccessExpirationDate(flashDate, panelObjectPath);
         }

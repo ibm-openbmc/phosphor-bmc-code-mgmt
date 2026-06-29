@@ -1,9 +1,9 @@
 #pragma once
 
-#include "common/include/NotifyWatch.hpp"
-#include "common/include/device.hpp"
-#include "common/include/software.hpp"
-#include "common/include/software_manager.hpp"
+#include "../common/include/NotifyWatch.hpp"
+#include "../common/include/device.hpp"
+#include "../common/include/software.hpp"
+#include "../common/include/software_manager.hpp"
 
 #include <sdbusplus/asio/connection.hpp>
 #include <sdbusplus/asio/object_server.hpp>
@@ -57,7 +57,7 @@ class SPIDevice : public Device, public NotifyWatchIntf
     static std::string getVersion();
 
     /** @brief Process async changes to cable configuration */
-    auto processUpdate(std::string versionFileName) -> sdbusplus::async::task<>;
+    sdbusplus::async::task<> processUpdate(const std::string& versionFileName);
 
   private:
     bool dryRun;

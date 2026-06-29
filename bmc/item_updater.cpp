@@ -1005,7 +1005,7 @@ bool ItemUpdater::activationInProgress()
 {
     for (const auto& i : activations)
     {
-        if (i.second.get()->activation() ==
+        if (i.second->activation() ==
             server::Activation::Activations::Activating)
         {
             return true;

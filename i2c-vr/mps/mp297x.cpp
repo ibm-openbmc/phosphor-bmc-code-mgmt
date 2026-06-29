@@ -1,6 +1,6 @@
 #include "mp297x.hpp"
 
-#include "common/include/utils.hpp"
+#include "../../common/include/utils.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 

@@ -150,7 +150,7 @@ auto Activation::activation(Activations value) -> Activations
             if (std::regex_match(buildID, pattern))
             {
                 isOneOff = true;
-                pos = buildID.find_first_of("-") + 1;
+                pos = buildID.find_first_of('-') + 1;
                 buildID = buildID.substr(pos);
             }
 

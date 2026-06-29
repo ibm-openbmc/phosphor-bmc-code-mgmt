@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/include/host_power.hpp"
+#include "../common/include/host_power.hpp"
 
 #include <cstdint>
 #include <memory>
