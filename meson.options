@@ -44,13 +44,6 @@ option(
 )
 
 option(
-    'verify-update-access-key',
-    type: 'feature',
-    value: 'disabled',
-    description: 'Enable verification of update access key.',
-)
-
-option(
     'software-manager-tool',
     type: 'feature',
     value: 'enabled',
