@@ -107,6 +107,7 @@ else
 endif
 
 unit_files = [
+    'assemble-lids.service.in',
     'obmc-flash-bmc-setenv@.service.in',
     'reboot-guard-disable.service.in',
     'reboot-guard-enable.service.in',
