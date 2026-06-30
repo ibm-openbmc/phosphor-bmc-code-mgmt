@@ -26,7 +26,7 @@ void Activation::flashWrite()
 void Activation::onStateChanges(sdbusplus::message_t& msg)
 {
     uint32_t newStateID{};
-    sdbusplus::object_path newStateObjPath;
+    sdbusplus::message::object_path newStateObjPath;
     std::string newStateUnit{};
     std::string newStateResult{};
 
@@ -52,6 +52,7 @@ void Activation::onStateChanges(sdbusplus::message_t& msg)
     {
         if (newStateResult == "failed" || newStateResult == "dependency")
         {
+            utils::createBmcDump(bus);
             Activation::activation(
                 softwareServer::Activation::Activations::Failed);
         }

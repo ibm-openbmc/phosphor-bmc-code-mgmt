@@ -1,10 +1,10 @@
 #pragma once
 
-#include "common/include/device.hpp"
-#include "common/include/software_manager.hpp"
+#include "../common/include/device.hpp"
+#include "../common/include/gpio_controller.hpp"
+#include "../common/include/software_manager.hpp"
 #include "cpld_interface.hpp"
 
-#include <gpio_controller.hpp>
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async/context.hpp>
 

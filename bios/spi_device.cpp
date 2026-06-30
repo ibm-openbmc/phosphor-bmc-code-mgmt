@@ -1,12 +1,12 @@
 #include "spi_device.hpp"
 
-#include "common/include/NotifyWatch.hpp"
-#include "common/include/device.hpp"
-#include "common/include/host_power.hpp"
-#include "common/include/software_manager.hpp"
-#include "common/include/utils.hpp"
+#include "../common/include/NotifyWatch.hpp"
+#include "../common/include/device.hpp"
+#include "../common/include/gpio_controller.hpp"
+#include "../common/include/host_power.hpp"
+#include "../common/include/software_manager.hpp"
+#include "../common/include/utils.hpp"
 
-#include <gpio_controller.hpp>
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async.hpp>
 #include <sdbusplus/async/context.hpp>
@@ -474,8 +474,8 @@ std::string SPIDevice::getVersion()
     return version;
 }
 
-auto SPIDevice::processUpdate(std::string versionFileName)
-    -> sdbusplus::async::task<>
+sdbusplus::async::task<> SPIDevice::processUpdate(
+    const std::string& versionFileName)
 {
     if (biosVersionFilename != versionFileName)
     {

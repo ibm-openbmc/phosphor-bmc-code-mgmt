@@ -1,9 +1,9 @@
 #pragma once
 
-#include "common/include/device.hpp"
-#include "common/include/host_power.hpp"
-#include "common/include/software.hpp"
-#include "common/include/software_manager.hpp"
+#include "../common/include/device.hpp"
+#include "../common/include/host_power.hpp"
+#include "../common/include/software.hpp"
+#include "../common/include/software_manager.hpp"
 #include "eeprom_device_version.hpp"
 
 #include <sdbusplus/async/context.hpp>

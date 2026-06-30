@@ -1,6 +1,6 @@
 #include "xdpe1x2xx.hpp"
 
-#include "common/include/i2c/i2c.hpp"
+#include "../../common/include/i2c/i2c.hpp"
 
 #include <unistd.h>
 
@@ -79,7 +79,7 @@ XDPE1X2XX::XDPE1X2XX(sdbusplus::async::context& ctx, uint16_t bus,
     VoltageRegulator(ctx), i2cInterface(phosphor::i2c::I2C(bus, address))
 {}
 
-sdbusplus::async::task<bool> XDPE1X2XX::getDeviceId(uint8_t* deviceID)
+sdbusplus::async::task<bool> XDPE1X2XX::getDeviceId(const uint8_t* deviceID)
 {
     uint8_t tbuf[16] = {0};
     tbuf[0] = PMBusICDeviceID;
@@ -97,7 +97,7 @@ sdbusplus::async::task<bool> XDPE1X2XX::getDeviceId(uint8_t* deviceID)
     // According to datasheet:
     // rbuf[1]: device revision
     // rbuf[2]: device id
-    std::memcpy(deviceID, &rbuf[1], IFXICDeviceIDLen);
+    std::memcpy(const_cast<uint8_t*>(deviceID), &rbuf[1], IFXICDeviceIDLen);
     info.deviceRev = deviceID[0];
     info.deviceId = deviceID[1];
     debug("VR Device ID: {ID}", "ID", lg2::hex, rbuf[2]);
@@ -107,7 +107,7 @@ sdbusplus::async::task<bool> XDPE1X2XX::getDeviceId(uint8_t* deviceID)
 }
 
 sdbusplus::async::task<bool> XDPE1X2XX::mfrFWcmd(
-    uint8_t cmd, uint16_t processTime, uint8_t* data, uint8_t* resp)
+    uint8_t cmd, uint16_t processTime, const uint8_t* data, const uint8_t* resp)
 {
     uint8_t tBuf[16] = {0};
     uint8_t rBuf[16] = {0};
@@ -163,7 +163,7 @@ sdbusplus::async::task<bool> XDPE1X2XX::mfrFWcmd(
                 "Failed to receive MFR response with unexpected response size");
             co_return false;
         }
-        std::memcpy(resp, rBuf + 1, 4);
+        std::memcpy(const_cast<uint8_t*>(resp), rBuf + 1, 4);
     }
 
     co_return true;

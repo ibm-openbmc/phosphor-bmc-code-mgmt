@@ -1,7 +1,7 @@
 #include "bios_software_manager.hpp"
 
-#include "common/include/dbus_helper.hpp"
-#include "common/include/software_manager.hpp"
+#include "../common/include/dbus_helper.hpp"
+#include "../common/include/software_manager.hpp"
 #include "spi_device.hpp"
 
 #include <gpiod.hpp>

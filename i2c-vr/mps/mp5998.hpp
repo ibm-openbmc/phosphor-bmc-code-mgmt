@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/include/pmbus.hpp"
+#include "../../common/include/pmbus.hpp"
 #include "mps.hpp"
 
 namespace phosphor::software::VR

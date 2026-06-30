@@ -4,13 +4,20 @@
 #include "phosphor-logging/lg2.hpp"
 
 #include <inttypes.h>
-#include <libpldm/edac.h>
+// #include <libpldm/edac.h>
 #include <libpldm/firmware_update.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <fstream>
 #include <limits>
 #include <random>
+
+extern "C"
+{
+uint32_t pldm_edac_crc32(const void* data, size_t size);
+}
 
 std::unique_ptr<uint8_t[]> create_pldm_package_buffer(
     const uint8_t* component_image, size_t component_image_size,

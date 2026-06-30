@@ -54,6 +54,10 @@ conf.set('MMC_LAYOUT', get_option('bmc-layout').contains('mmc'))
 conf.set('HOST_BIOS_UPGRADE', get_option('host-bios-upgrade').allowed())
 conf.set('WANT_SIGNATURE_VERIFY', get_option('verify-signature').allowed())
 conf.set(
+    'WANT_ACCESS_KEY_VERIFY',
+    get_option('verify-update-access-key').allowed(),
+)
+conf.set(
     'START_UPDATE_DBUS_INTEFACE',
     get_option('software-update-dbus-interface').allowed(),
 )
@@ -77,6 +81,7 @@ conf.set_quoted('SYNC_LIST_DIR_PATH', get_option('sync-list-dir-path'))
 conf.set_quoted('SYNC_LIST_FILE_NAME', get_option('sync-list-file-name'))
 conf.set_quoted('BMC_MSL', get_option('bmc-msl'))
 conf.set_quoted('REGEX_BMC_MSL', get_option('regex-bmc-msl'))
+conf.set_quoted('STORAGE_MODE', get_option('mmc-storage-mode'))
 
 if get_option('host-bios-upgrade').allowed()
     conf.set_quoted('BIOS_OBJPATH', get_option('bios-object-path'))
@@ -95,7 +100,14 @@ endif
 
 configure_file(output: 'config.h', configuration: conf)
 
+if cpp.has_header('CLI/CLI.hpp')
+    CLI11 = declare_dependency()
+else
+    CLI11 = dependency('CLI11')
+endif
+
 unit_files = [
+    'assemble-lids.service.in',
     'obmc-flash-bmc-setenv@.service.in',
     'reboot-guard-disable.service.in',
     'reboot-guard-enable.service.in',
@@ -109,6 +121,7 @@ image_updater_sources = files(
     'activation.cpp',
     'images.cpp',
     'item_updater.cpp',
+    'lid.cpp',
     'msl_verify.cpp',
     'serialize.cpp',
     'update_manager.cpp',
@@ -193,6 +206,10 @@ if (get_option('verify-signature').allowed())
     )
 endif
 
+if (get_option('verify-update-access-key').allowed())
+    image_updater_sources += files('uak_verify.cpp')
+endif
+
 executable(
     'phosphor-download-manager',
     'download_manager.cpp',
@@ -216,10 +233,12 @@ if get_option('software-update-dbus-interface').allowed()
     )
     unit_files += ['xyz.openbmc_project.Software.Manager.service.in']
 else
-    unit_files += [
-        'xyz.openbmc_project.Software.BMC.Updater.service.in',
-        'xyz.openbmc_project.Software.Version.service.in',
-    ]
+    if get_option('bmc-layout').contains('mmc')
+        unit_files += ['mmc/xyz.openbmc_project.Software.Version.service.in']
+    else
+        unit_files += ['xyz.openbmc_project.Software.Version.service.in']
+    endif
+    unit_files += ['xyz.openbmc_project.Software.BMC.Updater.service.in']
 endif
 
 executable(
@@ -246,6 +265,12 @@ executable(
 
 install_data(
     'obmc-flash-bmc',
+    install_mode: 'rwxr-xr-x',
+    install_dir: get_option('bindir'),
+)
+
+install_data(
+    'gen-lids-image-tar',
     install_mode: 'rwxr-xr-x',
     install_dir: get_option('bindir'),
 )
@@ -303,4 +328,18 @@ endif
 
 if get_option('side-switch-on-boot').allowed()
     subdir('side-switch')
+endif
+
+if get_option('software-manager-tool').allowed()
+    executable(
+        'software-manager-tool',
+        'msl_verify.cpp',
+        'software_manager_tool.cpp',
+        'code_updater_manager.cpp',
+        'utils.cpp',
+        'version.cpp',
+        dependencies: [CLI11, deps, ssl_dep],
+        install: true,
+        install_dir: get_option('libexecdir') / 'phosphor-code-mgmt',
+    )
 endif

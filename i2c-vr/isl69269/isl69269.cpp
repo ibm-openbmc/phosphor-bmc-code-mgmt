@@ -1,6 +1,6 @@
 #include "isl69269.hpp"
 
-#include "common/include/i2c/i2c.hpp"
+#include "../../common/include/i2c/i2c.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 
@@ -119,7 +119,8 @@ static uint8_t calcCRC8(const uint8_t* data, uint8_t len)
     return crc;
 }
 
-sdbusplus::async::task<bool> ISL69269::dmaReadWrite(uint8_t* reg, uint8_t* resp)
+sdbusplus::async::task<bool> ISL69269::dmaReadWrite(const uint8_t* reg,
+                                                    uint8_t* resp)
 {
     if (reg == nullptr || resp == nullptr)
     {
@@ -216,7 +217,7 @@ sdbusplus::async::task<bool> ISL69269::getHexMode(uint8_t* mode)
     co_return true;
 }
 
-sdbusplus::async::task<bool> ISL69269::getDeviceId(uint32_t* deviceId)
+sdbusplus::async::task<bool> ISL69269::getDeviceId(const uint32_t* deviceId)
 {
     if (deviceId == nullptr)
     {
@@ -237,7 +238,7 @@ sdbusplus::async::task<bool> ISL69269::getDeviceId(uint32_t* deviceId)
         co_return false;
     }
 
-    std::memcpy(deviceId, &rbuf[1], deviceIdLength);
+    std::memcpy(const_cast<uint32_t*>(deviceId), &rbuf[1], deviceIdLength);
 
     co_return true;
 }

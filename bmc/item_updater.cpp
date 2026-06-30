@@ -44,7 +44,7 @@ void ItemUpdater::createActivation(sdbusplus::message_t& msg)
     using SVersion = server::Version;
     using VersionPurpose = SVersion::VersionPurpose;
 
-    sdbusplus::object_path objPath;
+    sdbusplus::message::object_path objPath;
     auto purpose = VersionPurpose::Unknown;
     std::string extendedVersion;
     std::string version;
@@ -356,6 +356,7 @@ void ItemUpdater::processBMCImage()
 
                 if (minimum_ship_level::enabled())
                 {
+                    minimum_ship_level::sync();
                     minimumVersionObject =
                         std::make_unique<MinimumVersion>(bus, path);
                     minimumVersionObject->minimumVersion(
@@ -666,7 +667,7 @@ void ItemUpdater::freePriority(uint8_t value, const std::string& versionId)
 
 void ItemUpdater::reset()
 {
-    phosphor::software::updater::Helper::factoryReset();
+    helper.factoryReset();
 
     info("BMC factory reset will take effect upon reboot.");
 }
@@ -998,6 +999,19 @@ void ItemUpdater::getRunningSlot()
     constexpr auto slotFile = "/run/media/slot";
     std::fstream f(slotFile, std::ios_base::in);
     f >> runningImageSlot;
+}
+
+bool ItemUpdater::activationInProgress()
+{
+    for (const auto& i : activations)
+    {
+        if (i.second->activation() ==
+            server::Activation::Activations::Activating)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace updater

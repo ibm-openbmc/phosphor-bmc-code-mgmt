@@ -1,5 +1,5 @@
 
-#include "common/include/software_config.hpp"
+#include "../../../common/include/software_config.hpp"
 
 #include <fcntl.h>
 #include <inttypes.h>

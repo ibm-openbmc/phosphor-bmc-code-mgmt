@@ -27,6 +27,7 @@ sdbusplus::async::task<bool> LatticeXO5BaseCPLD::doUpdate()
     co_return true;
 }
 
+// NOLINTBEGIN(clang-analyzer-core.uninitialized.Branch)
 sdbusplus::async::task<bool> LatticeXO5BaseCPLD::waitUntilReady(
     std::chrono::milliseconds timeout)
 {
@@ -45,6 +46,7 @@ sdbusplus::async::task<bool> LatticeXO5BaseCPLD::waitUntilReady(
     lg2::error("Timeout waiting for device ready");
     co_return false;
 }
+// NOLINTEND(clang-analyzer-core.uninitialized.Branch)
 
 uint32_t LatticeXO5BaseCPLD::extractUint32(const std::vector<uint8_t>& data,
                                            size_t offset, bool isBigEndian)

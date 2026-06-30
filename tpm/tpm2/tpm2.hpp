@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tpm/tpm_device.hpp"
+#include "../../tpm/tpm_device.hpp"
 
 #include <string_view>
 

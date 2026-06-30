@@ -14,7 +14,7 @@ executable(
         pdi_dep,
         boost_dep,
         libgpiod_dep,
-        libpldm_dep,
+        libpldmcpp_dep,
     ],
     link_with: [libpldmutil, software_common_lib, libgpio_controller],
     install: true,

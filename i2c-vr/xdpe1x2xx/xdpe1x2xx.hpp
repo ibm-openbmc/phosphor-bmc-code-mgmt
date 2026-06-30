@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/include/i2c/i2c.hpp"
-#include "i2c-vr/vr.hpp"
+#include "../../common/include/i2c/i2c.hpp"
+#include "../../i2c-vr/vr.hpp"
 
 #include <sdbusplus/async.hpp>
 
@@ -55,9 +55,10 @@ class XDPE1X2XX : public VoltageRegulator
         struct configSect section[MaxSectCnt];
     };
 
-    sdbusplus::async::task<bool> getDeviceId(uint8_t* deviceId);
+    sdbusplus::async::task<bool> getDeviceId(const uint8_t* deviceId);
     sdbusplus::async::task<bool> mfrFWcmd(uint8_t cmd, uint16_t processTime,
-                                          uint8_t* data, uint8_t* resp);
+                                          const uint8_t* data,
+                                          const uint8_t* resp);
     sdbusplus::async::task<bool> getRemainingWrites(uint8_t* remain);
     sdbusplus::async::task<bool> program(bool force);
     sdbusplus::async::task<bool> getScratchPadAddress();

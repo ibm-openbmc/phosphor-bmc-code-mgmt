@@ -21,6 +21,7 @@
 #include <ctime>
 #include <filesystem>
 #include <random>
+#include <regex>
 #include <string>
 #include <system_error>
 
@@ -75,6 +76,17 @@ std::vector<std::string> getSoftwareObjects(sdbusplus::bus_t& bus)
     auto reply = bus.call(method);
     reply.read(paths);
     return paths;
+}
+
+void clearTmpImagePath(const std::string& dirPath)
+{
+    if (std::filesystem::is_directory(dirPath))
+    {
+        for (const auto& i : std::filesystem::directory_iterator(dirPath))
+        {
+            std::filesystem::remove_all(i);
+        }
+    }
 }
 
 } // namespace
@@ -151,7 +163,9 @@ int Manager::processImage(const std::string& tarFilePath)
         Version::getValue(manifestPath.string(), "MachineName");
     if (!machineStr.empty())
     {
-        if (machineStr != currMachine)
+        // If ignoreMachineName is set then let the update continue
+        if (!std::filesystem::exists("/tmp/ignore-machine-name") &&
+            machineStr != currMachine)
         {
             error(
                 "BMC upgrade: Machine name doesn't match: {CURRENT_MACHINE} vs {NEW_MACHINE}",
@@ -195,6 +209,40 @@ int Manager::processImage(const std::string& tarFilePath)
     // Get ExtendedVersion
     std::string extendedVersion =
         Version::getValue(manifestPath.string(), "ExtendedVersion");
+
+    // Get the running Extended Version
+    std::string currExtendedVersion =
+        Version::getBMCExtendedVersion(OS_RELEASE_FILE);
+
+    // Check if the Extended Version have IBM's format of NNXXXX_YYY where NN
+    // is the platform identifier. This is a subcategory of machine name, check
+    // the second character and prevent the update if it doesn't match.
+    std::regex regex{"([A-Z]{1})([A-Z]{1})([0-9]{4})_([0-9]{3})",
+                     std::regex::extended};
+    std::smatch match;
+    if (std::regex_search(extendedVersion, match, regex))
+    {
+        auto platform = match[2].str();
+
+        if (std::regex_search(currExtendedVersion, match, regex))
+        {
+            auto currPlatform = match[2].str();
+
+            // If ignoreMachineName is set then let the update continue
+            if (!std::filesystem::exists("/tmp/ignore-machine-name") &&
+                platform != currPlatform)
+            {
+                error("BMC upgrade: Platform name doesn't match: "
+                      "{CURRENT_PLATFORM} vs {NEW_PLATFORM}",
+                      "CURRENT_PLATFORM", currPlatform, "NEW_PLATFORM",
+                      platform);
+                report<ImageFailure>(
+                    ImageFail::FAIL("Platform name does not match"),
+                    ImageFail::PATH(manifestPath.string().c_str()));
+                return -1;
+            }
+        }
+    }
 
     // Get CompatibleNames
     std::vector<std::string> compatibleNames =
@@ -287,6 +335,7 @@ int Manager::unTar(const std::string& tarFilePath,
         // execl only returns on fail
         error("Failed to execute untar on {PATH}", "PATH", tarFilePath);
         report<UnTarFailure>(UnTarFail::PATH(tarFilePath.c_str()));
+        clearTmpImagePath(std::string{IMG_UPLOAD_DIR});
         return -1;
     }
     else if (pid > 0)
@@ -297,6 +346,7 @@ int Manager::unTar(const std::string& tarFilePath,
             error("Failed ({STATUS}) to untar file {PATH}", "STATUS", status,
                   "PATH", tarFilePath);
             report<UnTarFailure>(UnTarFail::PATH(tarFilePath.c_str()));
+            clearTmpImagePath(std::string{IMG_UPLOAD_DIR});
             return -1;
         }
     }
@@ -304,6 +354,7 @@ int Manager::unTar(const std::string& tarFilePath,
     {
         error("fork() failed: {ERRNO}", "ERRNO", errno);
         report<UnTarFailure>(UnTarFail::PATH(tarFilePath.c_str()));
+        clearTmpImagePath(std::string{IMG_UPLOAD_DIR});
         return -1;
     }
 

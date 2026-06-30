@@ -1,7 +1,7 @@
 #include "tda38640a.hpp"
 
-#include "common/include/i2c/i2c.hpp"
-#include "common/include/utils.hpp"
+#include "../../common/include/i2c/i2c.hpp"
+#include "../../common/include/utils.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 

@@ -6,9 +6,17 @@
 option(
     'bmc-layout',
     type: 'combo',
-    choices: ['static', 'ubi', 'mmc'],
+    choices: ['static', 'ubi', 'mmc', 'ufs'],
     value: 'static',
     description: 'The BMC layout type.',
+)
+
+option(
+    'mmc-storage-mode',
+    type: 'combo',
+    choices: ['mmc', 'ufs'],
+    value: 'mmc',
+    description: 'The BMC mass storage type.',
 )
 
 # Features
@@ -36,6 +44,13 @@ option(
 )
 
 option(
+    'software-manager-tool',
+    type: 'feature',
+    value: 'enabled',
+    description: 'Enable software manager tool for direct code updates.',
+)
+
+option(
     'usb-code-update',
     type: 'feature',
     value: 'enabled',
@@ -49,19 +64,19 @@ option(
     description: 'Implementation using software update D-Bus interface - https://github.com/openbmc/docs/blob/master/designs/code-update.md.',
 )
 
-option(
-    'i2cvr-software-update',
-    type: 'feature',
-    value: 'enabled',
-    description: 'Enable update of i2c voltage regulators',
-)
+# option(
+#    'i2cvr-software-update',
+#    type: 'feature',
+#    value: 'enabled',
+#    description: 'Enable update of i2c voltage regulators',
+#)
 
-option(
-    'cpld-software-update',
-    type: 'feature',
-    value: 'enabled',
-    description: 'Enable update of CPLD',
-)
+# option(
+#    'cpld-software-update',
+#    type: 'feature',
+#    value: 'enabled',
+#    description: 'Enable update of CPLD',
+#)
 
 option(
     'side-switch-on-boot',
@@ -70,25 +85,31 @@ option(
     description: 'Automatic flash side switch on boot',
 )
 
-option(
-    'bios-software-update',
-    type: 'feature',
-    value: 'enabled',
-    description: 'Enable BIOS/Host firmware update',
-)
+#option(
+#    'bios-software-update',
+#    type: 'feature',
+#    value: 'enabled',
+#    description: 'Enable BIOS/Host firmware update',
+#)
 
-option(
-    'eepromdevice-software-update',
-    type: 'feature',
-    value: 'enabled',
-    description: 'Enable EEPROM device update support.',
-)
+#option(
+#    'eepromdevice-software-update',
+#    type: 'feature',
+#    value: 'enabled',
+#    description: 'Enable EEPROM device update support.',
+#)
 
+#option(
+#    'tpm-software-update',
+#    type: 'feature',
+#    value: 'enabled',
+#    description: 'Enable TPM software update support.',
+#)
 option(
-    'tpm-software-update',
+    'verify-update-access-key',
     type: 'feature',
     value: 'enabled',
-    description: 'Enable TPM software update support.',
+    description: 'Enabled access key validation.',
 )
 
 # Variables

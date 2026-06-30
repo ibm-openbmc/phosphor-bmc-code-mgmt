@@ -1,6 +1,6 @@
 #include "cpld.hpp"
 
-#include "common/include/utils.hpp"
+#include "../common/include/utils.hpp"
 
 namespace phosphor::software::cpld
 {

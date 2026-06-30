@@ -20,6 +20,20 @@ class Device;
 namespace phosphor::software
 {
 
+// Need to declare this class to initialize the protected members of our base
+// class. This prevents "Conditional jump or move depends on uninitialised
+// value(s)" when properties are updated for the first time.
+class SoftwareActivationProgress :
+    private sdbusplus::aserver::xyz::openbmc_project::software::
+        ActivationProgress<Software>
+{
+  public:
+    SoftwareActivationProgress(sdbusplus::async::context& ctx,
+                               const char* objPath);
+
+    void setProgress(int progressArg);
+};
+
 using SoftwareActivationBlocksTransition = sdbusplus::aserver::xyz::
     openbmc_project::software::ActivationBlocksTransition<Software>;
 
@@ -64,6 +78,9 @@ class Software : private SoftwareActivation
     // yet running).
     sdbusplus::async::task<> createInventoryAssociations(bool isRunning);
 
+    // object path of this software
+    sdbusplus::message::object_path objectPath;
+
     // The device we are associated to, meaning this software is either running
     // on the device, or could potentially run on that device (update).
     device::Device& parentDevice;
@@ -75,30 +92,18 @@ class Software : private SoftwareActivation
     // and is deleted again afterwards.
     // This member is public since the device specific update function
     // needs to update the progress.
-    std::unique_ptr<sdbusplus::aserver::xyz::openbmc_project::software::
-                        ActivationProgress<Software>>
-        softwareActivationProgress = nullptr;
+    std::unique_ptr<SoftwareActivationProgress> softwareActivationProgress =
+        nullptr;
 
     static long int getRandomId();
 
   protected:
-    // object path of this software
-    const sdbusplus::object_path objectPath;
-
     // @returns the version purpose
     // @returns std::nullopt in case the version has not been set
     std::optional<SoftwareVersion::VersionPurpose> getPurpose();
 
     // @returns        a random software id (swid) for that device
     static std::string getRandomSoftwareId(device::Device& parent);
-
-    // @param isRunning             if the software version is currently running
-    // on the device. Otherwise the software is assumed to be activating (not
-    // yet running).
-    // @param objectPath            The object path of the inventory item to
-    // associate with. We only ever associate to one inventory item.
-    void createInventoryAssociation(bool isRunning,
-                                    const sdbusplus::object_path& objectPath);
 
   private:
     Software(sdbusplus::async::context& ctx, device::Device& parent,

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "common/include/device.hpp"
-#include "common/include/software_config.hpp"
-#include "common/include/software_manager.hpp"
+#include "../common/include/device.hpp"
+#include "../common/include/software_config.hpp"
+#include "../common/include/software_manager.hpp"
 #include "vr.hpp"
 
 namespace SoftwareInf = phosphor::software;

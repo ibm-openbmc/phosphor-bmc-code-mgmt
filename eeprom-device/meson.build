@@ -13,7 +13,7 @@ executable(
     include_directories: [common_include, eeprom_device_include, gpio_inc],
     dependencies: [
         libgpiod_dep,
-        libpldm_dep,
+        libpldmcpp_dep,
         phosphor_logging_dep,
         sdbusplus_dep,
     ],

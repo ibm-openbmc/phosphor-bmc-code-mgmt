@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/include/software_manager.hpp"
+#include "../common/include/software_manager.hpp"
 
 namespace ManagerInf = phosphor::software::manager;
 

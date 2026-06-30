@@ -24,6 +24,7 @@ void Helper::cleanup()
     // Empty
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void Helper::factoryReset()
 {
     // Set openbmconce=factory-reset env in U-Boot.

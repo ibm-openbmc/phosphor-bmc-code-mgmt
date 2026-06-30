@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/include/device.hpp"
-#include "common/include/software_manager.hpp"
+#include "../../common/include/device.hpp"
+#include "../../common/include/software_manager.hpp"
 
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async.hpp>
@@ -50,7 +50,7 @@ const std::string exampleInvObjPath =
 class ExampleSoftware : public Software
 {
   public:
-    using Software::createInventoryAssociation;
+    using Software::createInventoryAssociations;
     using Software::getPurpose;
     using Software::objectPath;
     ExampleSoftware(sdbusplus::async::context& ctx, ExampleDevice& parent);

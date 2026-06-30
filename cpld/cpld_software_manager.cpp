@@ -1,6 +1,6 @@
 #include "cpld_software_manager.hpp"
 
-#include "common/include/dbus_helper.hpp"
+#include "../common/include/dbus_helper.hpp"
 #include "cpld.hpp"
 
 #include <phosphor-logging/lg2.hpp>
