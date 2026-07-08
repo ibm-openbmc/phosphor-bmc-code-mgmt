@@ -257,6 +257,7 @@ executable(
     'image_manager_main.cpp',
     'version.cpp',
     'watch.cpp',
+    'serialize.cpp',
     software_common_sources,
     dependencies: [deps, ssl_dep],
     install: true,
