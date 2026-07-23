@@ -315,8 +315,11 @@ void Activation::onFlashWriteSuccess()
         info("BMC image ready; need reboot to get activated.");
     }
 
-    // Create Update Object for this version.
-    parent.createUpdateObject(versionId, path);
+    if (parent.useUpdateDBusInterface)
+    {
+        // Create Update Object for this version.
+        parent.createUpdateObject(versionId, path);
+    }
 
     activation(softwareServer::Activation::Activations::Active);
 }
