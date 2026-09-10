@@ -346,6 +346,6 @@ if get_option('software-manager-tool').allowed()
         'serialize.cpp',
         dependencies: [CLI11, deps, ssl_dep],
         install: true,
-        install_dir: get_option('libexecdir') / 'phosphor-code-mgmt',
+        install_dir: get_option('bindir'),
     )
 endif
