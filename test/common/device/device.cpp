@@ -20,9 +20,9 @@ PHOSPHOR_LOG2_USING;
 
 using namespace phosphor::software;
 using namespace phosphor::software::example_device;
-// using SoftwareActivationProgress =
-//     sdbusplus::aserver::xyz::openbmc_project::software::ActivationProgress<
-//         Software>;
+using SoftwareActivationProgress =
+    sdbusplus::aserver::xyz::openbmc_project::software::ActivationProgress<
+        Software>;
 
 class DeviceTest : public testing::Test
 {
@@ -161,7 +161,7 @@ TEST_F(DeviceTest, TestDeviceStartUpdateOnResetSuccess)
 sdbusplus::async::task<> testDeviceStartUpdateInvalidFD(
     sdbusplus::async::context& ctx, std::unique_ptr<ExampleDevice>& device)
 {
-    std::unique_ptr<SoftwareActivation> activationProgress =
+    std::unique_ptr<SoftwareActivationProgress> activationProgress =
         std::make_unique<SoftwareActivationProgress>(ctx, "/");
 
     sdbusplus::message::unix_fd image;
