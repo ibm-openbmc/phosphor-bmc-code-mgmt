@@ -10,6 +10,7 @@
 #include <sdbusplus/async.hpp>
 #include <sdbusplus/server.hpp>
 #include <xyz/openbmc_project/Association/Definitions/server.hpp>
+#include <xyz/openbmc_project/Control/BootSide/server.hpp>
 #include <xyz/openbmc_project/Software/Activation/server.hpp>
 #include <xyz/openbmc_project/Software/ActivationBlocksTransition/server.hpp>
 #include <xyz/openbmc_project/Software/ApplyTime/common.hpp>
@@ -31,9 +32,12 @@ namespace fs = std::filesystem;
 
 using AssociationList =
     std::vector<std::tuple<std::string, std::string, std::string>>;
+using ControlBootSides =
+    sdbusplus::server::xyz::openbmc_project::control::BootSide::BootSides;
 using ActivationInherit = sdbusplus::server::object_t<
     sdbusplus::server::xyz::openbmc_project::software::Activation,
-    sdbusplus::server::xyz::openbmc_project::association::Definitions>;
+    sdbusplus::server::xyz::openbmc_project::association::Definitions,
+    sdbusplus::server::xyz::openbmc_project::control::BootSide>;
 using ActivationBlocksTransitionInherit =
     sdbusplus::server::object_t<sdbusplus::server::xyz::openbmc_project::
                                     software::ActivationBlocksTransition>;
@@ -229,6 +233,17 @@ class Activation : public ActivationInherit, public Flash
 
     /** @brief Activation */
     using ActivationInherit::activation;
+
+    /** @brief Overloaded bootSide property setter function
+     *
+     * @param[in] value - One of ControlBootSides
+     *
+     * @return Success or exception thrown
+     */
+    ControlBootSides bootSide(ControlBootSides value) override;
+
+    /** @brief bootSide */
+    using ActivationInherit::bootSide;
 
     /** @brief Overloaded requestedActivation property setter function
      *

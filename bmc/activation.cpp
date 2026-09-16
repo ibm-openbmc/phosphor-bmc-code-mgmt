@@ -268,6 +268,32 @@ auto Activation::activation(Activations value) -> Activations
     return softwareServer::Activation::activation(value);
 }
 
+auto Activation::bootSide(ControlBootSides value) -> ControlBootSides
+{
+    auto it = parent.versions.find(versionId);
+    if (it != parent.versions.end())
+    {
+        storeBootSide(it->second->path(), value);
+    }
+
+    auto result = ActivationInherit::bootSide(value);
+
+    if (it != parent.versions.end() && it->second->isFunctional())
+    {
+        using SoftwareBootSides = sdbusplus::server::xyz::openbmc_project::
+            software::BootSide::BootSides;
+        auto currentSide =
+            static_cast<SoftwareBootSides>(static_cast<int>(value));
+        info("CurrentBootSide set to {SIDE} from version {ID}", "SIDE",
+             sdbusplus::server::xyz::openbmc_project::software::BootSide::
+                 convertBootSidesToString(currentSide),
+             "ID", versionId);
+        parent.currentBootSide(currentSide);
+    }
+
+    return result;
+}
+
 void Activation::onFlashWriteSuccess()
 {
     activationProgress->progress(100);
