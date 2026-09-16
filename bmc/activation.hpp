@@ -10,6 +10,7 @@
 #include <sdbusplus/async.hpp>
 #include <sdbusplus/server.hpp>
 #include <xyz/openbmc_project/Association/Definitions/server.hpp>
+#include <xyz/openbmc_project/Control/BootSide/server.hpp>
 #include <xyz/openbmc_project/Software/Activation/server.hpp>
 #include <xyz/openbmc_project/Software/ActivationBlocksTransition/server.hpp>
 #include <xyz/openbmc_project/Software/ApplyTime/common.hpp>
@@ -33,7 +34,8 @@ using AssociationList =
     std::vector<std::tuple<std::string, std::string, std::string>>;
 using ActivationInherit = sdbusplus::server::object_t<
     sdbusplus::server::xyz::openbmc_project::software::Activation,
-    sdbusplus::server::xyz::openbmc_project::association::Definitions>;
+    sdbusplus::server::xyz::openbmc_project::association::Definitions,
+    sdbusplus::server::xyz::openbmc_project::control::BootSide>;
 using ActivationBlocksTransitionInherit =
     sdbusplus::server::object_t<sdbusplus::server::xyz::openbmc_project::
                                     software::ActivationBlocksTransition>;
