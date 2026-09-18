@@ -287,6 +287,17 @@ class ItemUpdater : public ItemUpdaterInherit
      */
     bool activationInProgress();
 
+    /**
+     * @brief Sets BootSide on the functional Activation object to Perm,
+     * persists it, and updates CurrentBootSide to match.
+     */
+    void setPermBootSide();
+
+    /** @brief Sets NextBootSide if bmc role is active, persists the value,
+     *  and syncs image priorities so the image matching NextBootSide boots
+     *  next. */
+    BootSides nextBootSide(BootSides value) override;
+
     /** @brief Persistent map of Version D-Bus objects and their
      * version id */
     std::map<std::string, std::unique_ptr<VersionClass>> versions;
@@ -348,10 +359,6 @@ class ItemUpdater : public ItemUpdaterInherit
 
     /** @brief Restores field mode status on reboot. */
     void restoreFieldModeStatus();
-
-    /** @brief Sets NextBootSide if bmc role is active and
-     *  persist the value. */
-    BootSides nextBootSide(BootSides value) override;
 
     /** @brief Creates a functional association to the
      *  "running" BMC software image

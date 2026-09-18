@@ -790,7 +790,48 @@ BootSides ItemUpdater::nextBootSide(BootSides value)
     }
 
     storeNextBootSide(value);
-    return server::BootSide::nextBootSide(value);
+    auto result = server::BootSide::nextBootSide(value);
+
+    // Sync image priorities to match the new NextBootSide.
+    // The image whose BootSide matches value gets priority 0.
+    auto targetSide = static_cast<ControlBootSides>(static_cast<int>(value));
+    for (const auto& act : activations)
+    {
+        if (act.second->redundancyPriority &&
+            act.second->bootSide() == targetSide)
+        {
+            // Skip the priority sync if this image is already at priority 0.
+            if (act.second->redundancyPriority->priority() != 0)
+            {
+                act.second->redundancyPriority->sdbusPriority(0);
+                savePriority(act.first, 0);
+                freePriority(0, act.first);
+            }
+            break;
+        }
+    }
+
+    return result;
+}
+
+void ItemUpdater::setPermBootSide()
+{
+    for (const auto& ver : versions)
+    {
+        if (ver.second->isFunctional())
+        {
+            auto it = activations.find(ver.first);
+            if (it != activations.end())
+            {
+                it->second->bootSide(ControlBootSides::Perm);
+                storeBootSide(ver.second->path(), ControlBootSides::Perm);
+                server::BootSide::currentBootSide(
+                    static_cast<server::BootSide::BootSides>(
+                        static_cast<int>(ControlBootSides::Perm)));
+            }
+            break;
+        }
+    }
 }
 
 void ItemUpdater::restoreFieldModeStatus()
