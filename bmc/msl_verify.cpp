@@ -196,7 +196,7 @@ void minimum_ship_level::writeSystemKeyword(const std::string& value)
     auto service = utils::getService(bus, vpdPath, vpdInterface);
     auto method = bus.new_method_call(service.c_str(), vpdPath, vpdInterface,
                                       "WriteKeyword");
-    method.append(static_cast<sdbusplus::message::object_path>(objectPath),
+    method.append(static_cast<sdbusplus::object_path>(objectPath),
                   vpdRecord, vpdKeyword, vpdValue);
     bus.call_noreply(method);
 }

@@ -58,7 +58,7 @@ void setProperty(sdbusplus::bus_t& bus, const std::string& objectPath,
     bus.call_noreply(method);
 }
 
-SubTreeResponse getSubTree(sdbusplus::bus::bus& bus,
+SubTreeResponse getSubTree(sdbusplus::bus_t& bus,
                            const std::string& interface)
 {
     auto method = bus.new_method_call(MAPPER_BUSNAME, MAPPER_PATH,
@@ -96,7 +96,7 @@ void mergeFiles(const std::vector<std::string>& srcFiles,
     outFile.close();
 }
 
-void createBmcDump(sdbusplus::bus::bus& bus)
+void createBmcDump(sdbusplus::bus_t& bus)
 {
     auto method = bus.new_method_call(
         "xyz.openbmc_project.Dump.Manager", "/xyz/openbmc_project/dump/bmc",
@@ -114,7 +114,7 @@ void createBmcDump(sdbusplus::bus::bus& bus)
     }
 }
 
-void subscribeToSystemdSignals(sdbusplus::bus::bus& bus)
+void subscribeToSystemdSignals(sdbusplus::bus_t& bus)
 {
     try
     {
@@ -139,7 +139,7 @@ void subscribeToSystemdSignals(sdbusplus::bus::bus& bus)
     }
 }
 
-void unsubscribeFromSystemdSignals(sdbusplus::bus::bus& bus)
+void unsubscribeFromSystemdSignals(sdbusplus::bus_t& bus)
 {
     try
     {

@@ -80,7 +80,7 @@ void setProperty(sdbusplus::bus_t& bus, const std::string& objectPath,
  *
  *  @throw sdbusplus::exception::exception when it fails
  */
-SubTreeResponse getSubTree(sdbusplus::bus::bus& bus,
+SubTreeResponse getSubTree(sdbusplus::bus_t& bus,
                            const std::string& interface);
 
 /**
@@ -99,7 +99,7 @@ void mergeFiles(const std::vector<std::string>& srcFiles,
  * @param[in] bus
  **/
 
-void createBmcDump(sdbusplus::bus::bus& bus);
+void createBmcDump(sdbusplus::bus_t& bus);
 
 /**
  * @brief subscribe to the systemd signals
@@ -108,7 +108,7 @@ void createBmcDump(sdbusplus::bus::bus& bus);
  * so it can keep it's state updated
  *
  */
-void subscribeToSystemdSignals(sdbusplus::bus::bus& bus);
+void subscribeToSystemdSignals(sdbusplus::bus_t& bus);
 
 /**
  * @brief unsubscribe from the systemd signals
@@ -118,7 +118,7 @@ void subscribeToSystemdSignals(sdbusplus::bus::bus& bus);
  * unitStateChange().
  *
  */
-void unsubscribeFromSystemdSignals(sdbusplus::bus::bus& bus);
+void unsubscribeFromSystemdSignals(sdbusplus::bus_t& bus);
 
 namespace internal
 {
