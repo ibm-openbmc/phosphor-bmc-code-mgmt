@@ -283,8 +283,8 @@ void USBManager::bmcCheckState(sdbusplus::message::message& msg)
 
 void USBManager::listenActivationState(const std::string& path)
 {
-    static std::unique_ptr<sdbusplus::bus::match::match> activationState =
-        std::make_unique<sdbusplus::bus::match::match>(
+    static std::unique_ptr<sdbusplus::match> activationState =
+        std::make_unique<sdbusplus::match>(
             bus,
             MatchRules::propertiesChanged(
                 path, "xyz.openbmc_project.Software.Activation"),
@@ -343,7 +343,7 @@ void USBManager::activationChangeEvent(sdbusplus::message::message& msg)
 
 void USBManager::setProgressSRC(
     const std::tuple<std::vector<uint8_t>, std::vector<uint8_t>>& prgCode,
-    sdbusplus::bus::bus& bus)
+    sdbusplus::bus_t& bus)
 {
     static constexpr auto bootRawProgress =
         "xyz.openbmc_project.State.Boot.Raw";
@@ -371,7 +371,7 @@ void USBManager::setProgressSRC(
 }
 
 void USBManager::writeProgressSRC(const std::vector<uint8_t>& primArray,
-                                  sdbusplus::bus::bus& bus)
+                                  sdbusplus::bus_t& bus)
 {
     const size_t refcodeBegin = 40;
     const size_t refcodeSize = 8;
@@ -391,25 +391,25 @@ void USBManager::writeProgressSRC(const std::vector<uint8_t>& primArray,
     setProgressSRC(std::make_tuple(primArray, secArr), bus);
 }
 
-void USBManager::writeSuccess(sdbusplus::bus::bus& bus)
+void USBManager::writeSuccess(sdbusplus::bus_t& bus)
 {
     std::vector<uint8_t> successArray{67, 49, 48, 48, 66, 49, 48, 51};
     writeProgressSRC(successArray, bus);
 }
 
-void USBManager::writeSideOneProgress(sdbusplus::bus::bus& bus)
+void USBManager::writeSideOneProgress(sdbusplus::bus_t& bus)
 {
     std::vector<uint8_t> sameSideArray{67, 49, 48, 48, 66, 49, 48, 49};
     writeProgressSRC(sameSideArray, bus);
 }
 
-void USBManager::writeSideTwoProgress(sdbusplus::bus::bus& bus)
+void USBManager::writeSideTwoProgress(sdbusplus::bus_t& bus)
 {
     std::vector<uint8_t> oppSideArray{67, 49, 48, 48, 66, 49, 48, 50};
     writeProgressSRC(oppSideArray, bus);
 }
 
-void USBManager::writeFail(sdbusplus::bus::bus& bus)
+void USBManager::writeFail(sdbusplus::bus_t& bus)
 {
     std::vector<uint8_t> failArray{67, 49, 48, 48, 66, 49, 48, 52};
     writeProgressSRC(failArray, bus);

@@ -123,7 +123,7 @@ class USBManager
      **/
     void setProgressSRC(
         const std::tuple<std::vector<uint8_t>, std::vector<uint8_t>>& prgCode,
-        sdbusplus::bus::bus& bus);
+        sdbusplus::bus_t& bus);
 
     /**
      * @brief method to create tuple for dbus method that displays information
@@ -132,7 +132,7 @@ class USBManager
      * @param[in] primArray - the progress Code SRC
      **/
     void writeProgressSRC(const std::vector<uint8_t>& primArray,
-                          sdbusplus::bus::bus& bus);
+                          sdbusplus::bus_t& bus);
 
     /**
      * @brief method to display success message on op panel during usb code
@@ -141,7 +141,7 @@ class USBManager
      *
      * @param[in] bus
      **/
-    void writeSuccess(sdbusplus::bus::bus& bus);
+    void writeSuccess(sdbusplus::bus_t& bus);
 
     /**
      * @brief method to display same side installation message on op panel
@@ -150,7 +150,7 @@ class USBManager
      *
      * @param[in] bus
      **/
-    void writeSideOneProgress(sdbusplus::bus::bus& bus);
+    void writeSideOneProgress(sdbusplus::bus_t& bus);
 
     /**
      * @brief method to display opposite side installation message on op panel
@@ -159,7 +159,7 @@ class USBManager
      *
      * @param[in] bus
      **/
-    void writeSideTwoProgress(sdbusplus::bus::bus& bus);
+    void writeSideTwoProgress(sdbusplus::bus_t& bus);
 
     /**
      * @brief method to display fail message on op panel during usb code update
@@ -167,7 +167,7 @@ class USBManager
      *
      * @param[in] bus
      **/
-    void writeFail(sdbusplus::bus::bus& bus);
+    void writeFail(sdbusplus::bus_t& bus);
 
   private:
     /** @brief Persistent sdbusplus DBus bus connection. */

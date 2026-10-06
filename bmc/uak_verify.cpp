@@ -80,7 +80,7 @@ void UpdateAccessKey::writeUpdateAccessExpirationDate(
         auto service = utils::getService(bus, uakObjPath, uakInterface);
         auto method = bus.new_method_call(service.c_str(), uakObjPath,
                                           uakInterface, "WriteKeyword");
-        method.append(static_cast<sdbusplus::message::object_path>(objectPath),
+        method.append(static_cast<sdbusplus::object_path>(objectPath),
                       fruRecord, fruKeyword, uakData);
         bus.call_noreply(method);
     }
