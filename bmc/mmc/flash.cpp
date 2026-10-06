@@ -4,6 +4,11 @@
 
 #include "activation.hpp"
 #include "item_updater.hpp"
+#include "utils.hpp"
+
+#include <phosphor-logging/elog-errors.hpp>
+#include <phosphor-logging/elog.hpp>
+#include <xyz/openbmc_project/Common/error.hpp>
 
 namespace phosphor
 {
@@ -11,6 +16,10 @@ namespace software
 {
 namespace updater
 {
+
+using namespace phosphor::logging;
+using InternalFailure =
+    sdbusplus::error::xyz::openbmc_project::common::InternalFailure;
 
 namespace softwareServer = sdbusplus::server::xyz::openbmc_project::software;
 
@@ -52,7 +61,7 @@ void Activation::onStateChanges(sdbusplus::message_t& msg)
     {
         if (newStateResult == "failed" || newStateResult == "dependency")
         {
-            utils::createBmcDump(bus);
+            report<InternalFailure>();
             Activation::activation(
                 softwareServer::Activation::Activations::Failed);
         }

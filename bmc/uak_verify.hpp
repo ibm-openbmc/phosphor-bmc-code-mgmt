@@ -53,6 +53,12 @@ class UpdateAccessKey
     bool verify(const std::string& gaDate, const std::string& version,
                 bool isOneOff);
 
+    /** @brief Get the expiration date read by the last UAK validation */
+    const std::string& getExpirationDate() const
+    {
+        return expirationDate;
+    }
+
     /** @brief Syncs the update access key found in VPD and flash memory */
     static void sync();
 

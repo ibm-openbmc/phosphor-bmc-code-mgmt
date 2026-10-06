@@ -4,6 +4,7 @@
 #include "item_updater.hpp"
 #include "msl_verify.hpp"
 #include "serialize.hpp"
+#include "utils.hpp"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/post.hpp>
@@ -43,6 +44,9 @@ using AccessKeyErr =
     sdbusplus::error::xyz::openbmc_project::software::version::ExpiredAccessKey;
 using IncompatibleErr =
     sdbusplus::error::xyz::openbmc_project::software::version::Incompatible;
+using ExpiredAccessKey =
+    xyz::openbmc_project::software::version::ExpiredAccessKey;
+using Incompatible = xyz::openbmc_project::software::version::Incompatible;
 
 #ifdef WANT_SIGNATURE_VERIFY
 namespace control = sdbusplus::server::xyz::openbmc_project::control;
@@ -110,8 +114,10 @@ auto Activation::activation(Activations value) -> Activations
         {
             using InvalidSignatureErr = sdbusplus::error::xyz::openbmc_project::
                 software::version::InvalidSignature;
-            report<InvalidSignatureErr>();
-            utils::createBmcDump(bus);
+            auto entryId = report<InvalidSignatureErr>();
+            sdbusplus::message::object_path objPath(
+                utils::logEntryBasePath + std::to_string(entryId));
+            utils::createBmcDump(bus, objPath);
             // Stop the activation process, if fieldMode is enabled.
             if (parent.control::FieldMode::fieldModeEnabled())
             {
@@ -160,7 +166,14 @@ auto Activation::activation(Activations value) -> Activations
             {
                 if (!updateAccessKey.verify(buildID, currVersion, isOneOff))
                 {
-                    utils::createBmcDump(bus);
+                    auto buildIDTrunc = buildID.substr(0, 8);
+                    auto entryId = report<AccessKeyErr>(
+                        ExpiredAccessKey::EXP_DATE(
+                            updateAccessKey.getExpirationDate().c_str()),
+                        ExpiredAccessKey::BUILD_ID(buildIDTrunc.c_str()));
+                    sdbusplus::message::object_path objPath(
+                        utils::logEntryBasePath + std::to_string(entryId));
+                    utils::createBmcDump(bus, objPath);
                     if (parent.control::FieldMode::fieldModeEnabled())
                     {
                         return softwareServer::Activation::activation(
@@ -170,8 +183,10 @@ auto Activation::activation(Activations value) -> Activations
             }
             catch (AccessKeyErr& e)
             {
-                commit<AccessKeyErr>();
-                utils::createBmcDump(bus);
+                auto entryId = commit<AccessKeyErr>();
+                sdbusplus::message::object_path objPath(
+                    utils::logEntryBasePath + std::to_string(entryId));
+                utils::createBmcDump(bus, objPath);
                 if (parent.control::FieldMode::fieldModeEnabled())
                 {
                     return softwareServer::Activation::activation(
@@ -193,15 +208,26 @@ auto Activation::activation(Activations value) -> Activations
             {
                 if (!minimum_ship_level::verify(versionStr))
                 {
-                    utils::createBmcDump(bus);
+                    auto msl = minimum_ship_level::getMinimumVersion();
+                    std::string purpose =
+                        "xyz.openbmc_project.Software.Version.VersionPurpose.BMC";
+                    auto entryId = report<IncompatibleErr>(
+                        Incompatible::MIN_VERSION(msl.c_str()),
+                        Incompatible::ACTUAL_VERSION(versionStr.c_str()),
+                        Incompatible::VERSION_PURPOSE(purpose.c_str()));
+                    sdbusplus::message::object_path objPath(
+                        utils::logEntryBasePath + std::to_string(entryId));
+                    utils::createBmcDump(bus, objPath);
                     return softwareServer::Activation::activation(
                         softwareServer::Activation::Activations::Failed);
                 }
             }
             catch (IncompatibleErr& e)
             {
-                commit<IncompatibleErr>();
-                utils::createBmcDump(bus);
+                auto entryId = commit<IncompatibleErr>();
+                sdbusplus::message::object_path objPath(
+                    utils::logEntryBasePath + std::to_string(entryId));
+                utils::createBmcDump(bus, objPath);
                 return softwareServer::Activation::activation(
                     softwareServer::Activation::Activations::Failed);
             }
@@ -386,7 +412,7 @@ auto Activation::requestedActivation(RequestedActivations value)
             if (parent.activationInProgress())
             {
                 error("Another code update is already in progress");
-                utils::createBmcDump(bus);
+                report<InternalFailure>();
                 Activation::activation(
                     softwareServer::Activation::Activations::Failed);
             }

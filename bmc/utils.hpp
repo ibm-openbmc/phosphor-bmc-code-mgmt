@@ -1,3 +1,5 @@
+#pragma once
+
 #include "config.h"
 
 #include <sdbusplus/server.hpp>
@@ -93,13 +95,19 @@ SubTreeResponse getSubTree(sdbusplus::bus::bus& bus,
 void mergeFiles(const std::vector<std::string>& srcFiles,
                 const std::string& dstFile);
 
+constexpr auto logEntryBasePath = "/xyz/openbmc_project/logging/entry/";
+
 /**
  * @brief Call phosphor-dump-manager to create BMC user dump
  *
  * @param[in] bus
+ * @param[in] objectPath - D-Bus object path of the associated error log entry.
+ *                         Passed as EventId to CreateDump so dreport can
+ *                         collect the dump details inside the dump archive.
  **/
 
-void createBmcDump(sdbusplus::bus::bus& bus);
+void createBmcDump(sdbusplus::bus::bus& bus,
+                   const sdbusplus::object_path& objectPath);
 
 /**
  * @brief subscribe to the systemd signals
