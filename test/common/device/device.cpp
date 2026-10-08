@@ -20,9 +20,9 @@ PHOSPHOR_LOG2_USING;
 
 using namespace phosphor::software;
 using namespace phosphor::software::example_device;
-// using SoftwareActivationProgress =
-//     sdbusplus::aserver::xyz::openbmc_project::software::ActivationProgress<
-//         Software>;
+using SoftwareActivationProgress =
+    sdbusplus::aserver::xyz::openbmc_project::software::ActivationProgress<
+        Software>;
 
 class DeviceTest : public testing::Test
 {

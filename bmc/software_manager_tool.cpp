@@ -26,7 +26,8 @@ int main(int argc, char** argv)
         "--ignore_machine_name", ignoreMachineName,
         "Ignore the machine type to allow a firmware upgrade in the lab. For lab and testing purposes only.");
     app.add_option("--codeupdate", imagePath,
-                   "Perform code update with new image on specified path");
+                   "Perform code update with new image on specified path")
+        ->type_name("PATH");
 
     CLI11_PARSE(app, argc, argv);
 

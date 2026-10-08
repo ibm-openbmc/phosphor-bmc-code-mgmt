@@ -1,6 +1,7 @@
 #include "update_manager.hpp"
 
 #include "item_updater.hpp"
+#include "serialize.hpp"
 #include "software_utils.hpp"
 #include "version.hpp"
 
@@ -17,6 +18,8 @@ PHOSPHOR_LOG2_USING;
 
 namespace phosphor::software::update
 {
+
+namespace serialize = phosphor::software::updater;
 
 namespace fs = std::filesystem;
 namespace softwareUtils = phosphor::software::utils;
@@ -77,6 +80,10 @@ auto Manager::processImage(sdbusplus::message::unix_fd image,
     std::error_code ec;
     tmpDirPath = tmpDir;
     softwareUtils::RemovablePath tmpDirToRemove(tmpDirPath);
+
+    // Back up the tarball from the fd before unTar consumes it
+    serialize::createTarballBackup(
+        false, "", fs::path("/proc/self/fd/") / std::to_string(image.fd));
 
     // Untar tarball into the tmp dir
     if (!softwareUtils::unTar(image, tmpDirPath.string()))
@@ -212,7 +219,7 @@ auto Manager::processImage(sdbusplus::message::unix_fd image,
     co_return;
 }
 
-sdbusplus::message::object_path Manager::startUpdate(
+sdbusplus::object_path Manager::startUpdate(
     sdbusplus::message::unix_fd image,
     ApplyTimeIntf::RequestedApplyTimes applyTime)
 {
@@ -222,7 +229,7 @@ sdbusplus::message::object_path Manager::startUpdate(
     {
         error("Failed to start as update is already in progress");
         report<Unavailable>();
-        return sdbusplus::message::object_path();
+        return sdbusplus::object_path();
     }
     updateInProgress = true;
 
@@ -235,7 +242,7 @@ sdbusplus::message::object_path Manager::startUpdate(
     int newFd = dup(image);
     ctx.spawn(processImage(newFd, applyTime, id, objPath));
 
-    return sdbusplus::message::object_path(objPath);
+    return sdbusplus::object_path(objPath);
 }
 
 } // namespace phosphor::software::update

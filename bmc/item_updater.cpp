@@ -44,7 +44,7 @@ void ItemUpdater::createActivation(sdbusplus::message_t& msg)
     using SVersion = server::Version;
     using VersionPurpose = SVersion::VersionPurpose;
 
-    sdbusplus::message::object_path objPath;
+    sdbusplus::object_path objPath;
     auto purpose = VersionPurpose::Unknown;
     std::string extendedVersion;
     std::string version;
@@ -852,6 +852,39 @@ void ItemUpdater::resetUbootEnvVars()
     updateUbootEnvVars(lowestPriorityVersion);
 }
 
+void ItemUpdater::eraseDeferred(const std::string& entryId)
+{
+    // Same ordering as erase(): remove from activations first so
+    // resetUbootEnvVars() doesn't see the version being deleted,
+    // then reset U-Boot, then wipe the partition.
+    // The D-Bus teardown of versions/updateManagers is deferred via
+    // ctx.spawn() because destroying sdbusplus::bus::match_t members
+    // while the async event loop is mid-dispatch corrupts libsystemd
+    // internal state.
+    auto iteratorActivations = activations.find(entryId);
+    if (iteratorActivations != activations.end())
+    {
+        removeAssociations(iteratorActivations->second->path);
+        activations.erase(entryId);
+    }
+    resetUbootEnvVars();
+
+    auto it = versions.find(entryId);
+    if (it != versions.end())
+    {
+        removeReadOnlyPartition(entryId);
+        auto path = it->second->path();
+        ctx.spawn([](ItemUpdater* self, std::string id,
+                     std::string flashId) -> sdbusplus::async::task<> {
+            removePersistDataDirectory(flashId);
+            self->helper.clearEntry(flashId);
+            self->versions.erase(id);
+            self->updateManagers.erase(id);
+            co_return;
+        }(this, entryId, path));
+    }
+}
+
 void ItemUpdater::freeSpace([[maybe_unused]] const Activation& caller)
 {
 #ifdef BMC_STATIC_DUAL_IMAGE
@@ -868,7 +901,14 @@ void ItemUpdater::freeSpace([[maybe_unused]] const Activation& caller)
     }
     if (!versionIDtoErase.empty())
     {
-        erase(versionIDtoErase);
+        if (useUpdateDBusInterface)
+        {
+            eraseDeferred(versionIDtoErase);
+        }
+        else
+        {
+            erase(versionIDtoErase);
+        }
     }
     else
     {
@@ -921,7 +961,14 @@ void ItemUpdater::freeSpace([[maybe_unused]] const Activation& caller)
     // remove the highest priority one(s).
     while ((count >= ACTIVE_BMC_MAX_ALLOWED) && (!versionsPQ.empty()))
     {
-        erase(versionsPQ.top().second);
+        if (useUpdateDBusInterface)
+        {
+            eraseDeferred(versionsPQ.top().second);
+        }
+        else
+        {
+            erase(versionsPQ.top().second);
+        }
         versionsPQ.pop();
         count--;
     }

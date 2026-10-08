@@ -376,6 +376,15 @@ class ItemUpdater : public ItemUpdaterInherit
      */
     void removeReadOnlyPartition(const std::string& versionId);
 
+    /** @brief Like erase(), but defers the D-Bus object teardown
+     *  (versions/updateManagers) via ctx.spawn() so that
+     *  sdbusplus::bus::match_t members are not destroyed while the async
+     *  event loop is mid-dispatch.
+     *
+     * @param[in]  entryId - The version id to remove.
+     */
+    void eraseDeferred(const std::string& entryId);
+
     /** @brief Copies U-Boot from the currently booted BMC chip to the
      *  alternate chip.
      */

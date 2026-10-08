@@ -19,7 +19,6 @@ namespace manager
 
 using Association = std::tuple<std::string, std::string, std::string>;
 using Paths = std::vector<std::string>;
-
 bool CodeUpdateManager::copyImage()
 {
     std::error_code ec;
@@ -117,6 +116,14 @@ auto CodeUpdateManager::run() -> sdbusplus::async::task<void>
     }
 
     co_await startUpdate(fd);
+
+    // Clean up the copied image file from /tmp/images
+    std::error_code ec;
+    if (!(fs::exists(imageDstPath, ec) && fs::remove(imageDstPath, ec)))
+    {
+        lg2::error("Failed to delete copied image file {PATH}: {ERROR}", "PATH",
+                   imageDstPath, "ERROR", ec.message());
+    }
 
     ctx.request_stop();
 
