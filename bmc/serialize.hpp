@@ -4,6 +4,9 @@
 
 #include "version.hpp"
 
+#include <xyz/openbmc_project/Control/BootSide/server.hpp>
+#include <xyz/openbmc_project/Software/BootSide/server.hpp>
+
 #include <filesystem>
 #include <string>
 
@@ -16,6 +19,10 @@ namespace updater
 
 namespace fs = std::filesystem;
 
+using BootSides =
+    sdbusplus::server::xyz::openbmc_project::software::BootSide::BootSides;
+using ControlBootSides =
+    sdbusplus::server::xyz::openbmc_project::control::BootSide::BootSides;
 using VersionPurpose =
     sdbusplus::server::xyz::openbmc_project::software::Version::VersionPurpose;
 
@@ -28,6 +35,32 @@ using VersionPurpose =
  **/
 void createTarballBackup(bool deleteInitialBackup,
                          const std::string& flashId = "", fs::path source = "");
+
+/** @brief Serialization function - stores bootSide information to file
+ *  @param[in] flashId - The flash id of the version for which to store
+ *                       information.
+ *  @param[in] side - ControlBootSides value for that version.
+ **/
+void storeBootSide(const std::string& flashId, ControlBootSides side);
+
+/** @brief Serialization function - restores bootSide information from file
+ *  @param[in] flashId - The flash id of the version for which to retrieve
+ *                       information.
+ *  @param[in] side - ControlBootSides reference for that version.
+ *  @return true if restore was successful, false if not
+ **/
+bool restoreBootSide(const std::string& flashId, ControlBootSides& side);
+
+/** @brief Serialization function - stores nextBootSide information to file
+ *  @param[in] side - BootSides value for that version.
+ **/
+void storeNextBootSide(BootSides side);
+
+/** @brief Serialization function - restores nextBootSide information from file
+ *  @param[in] side - BootSides reference for that version.
+ *  @return true if restore was successful, false if not
+ **/
+bool restoreNextBootSide(BootSides& side);
 
 /** @brief Serialization function - stores priority information to file
  *  @param[in] flashId - The flash id of the version for which to store

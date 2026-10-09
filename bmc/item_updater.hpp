@@ -12,7 +12,9 @@
 #include <sdbusplus/server.hpp>
 #include <xyz/openbmc_project/Association/Definitions/server.hpp>
 #include <xyz/openbmc_project/Common/FactoryReset/server.hpp>
+#include <xyz/openbmc_project/Control/BootSide/server.hpp>
 #include <xyz/openbmc_project/Control/FieldMode/server.hpp>
+#include <xyz/openbmc_project/Software/BootSide/server.hpp>
 #include <xyz/openbmc_project/Software/MinimumVersion/server.hpp>
 
 #include <string>
@@ -33,6 +35,7 @@ using ActivationIntf =
     sdbusplus::xyz::openbmc_project::Software::server::Activation;
 using ItemUpdaterInherit = sdbusplus::server::object_t<
     sdbusplus::server::xyz::openbmc_project::common::FactoryReset,
+    sdbusplus::server::xyz::openbmc_project::software::BootSide,
     sdbusplus::server::xyz::openbmc_project::control::FieldMode,
     sdbusplus::server::xyz::openbmc_project::association::Definitions,
     sdbusplus::server::xyz::openbmc_project::collection::DeleteAll>;
@@ -126,6 +129,7 @@ class ItemUpdater : public ItemUpdaterInherit
             createBIOSObject();
 #endif
         }
+        restoreNextBootSide();
         restoreFieldModeStatus();
         lidClass = std::make_unique<phosphor::software::manager::Lid>(
             bus, path.c_str());
@@ -281,8 +285,18 @@ class ItemUpdater : public ItemUpdaterInherit
      *
      * @return true if another image is being activated, false if otherwise
      */
-
     bool activationInProgress();
+
+    /**
+     * @brief Sets BootSide on the functional Activation object to Perm,
+     * persists it, and updates CurrentBootSide to match.
+     */
+    void setPermBootSide();
+
+    /** @brief Sets NextBootSide if bmc role is active, persists the value,
+     *  and syncs image priorities so the image matching NextBootSide boots
+     *  next. */
+    BootSides nextBootSide(BootSides value) override;
 
     /** @brief Persistent map of Version D-Bus objects and their
      * version id */
@@ -339,6 +353,9 @@ class ItemUpdater : public ItemUpdaterInherit
 
     /** @brief The path to the BMC inventory item. */
     std::string bmcInventoryPath;
+
+    /** @brief Restores NextBootSide on reboot. */
+    void restoreNextBootSide();
 
     /** @brief Restores field mode status on reboot. */
     void restoreFieldModeStatus();

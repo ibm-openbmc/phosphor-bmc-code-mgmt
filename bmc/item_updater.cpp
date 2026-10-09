@@ -13,7 +13,9 @@
 #include <phosphor-logging/lg2.hpp>
 #include <xyz/openbmc_project/Common/error.hpp>
 #include <xyz/openbmc_project/Software/Image/error.hpp>
+#include <xyz/openbmc_project/State/BMC/Redundancy/client.hpp>
 
+#include <cerrno>
 #include <filesystem>
 #include <fstream>
 #include <queue>
@@ -400,6 +402,15 @@ void ItemUpdater::processBMCImage()
                 id, std::make_unique<Activation>(
                         ctx, path, *this, id, activationState, associations)));
 
+            // Restore bootSide for this activation from persist dir
+            {
+                using ControlBootSides = sdbusplus::server::xyz::
+                    openbmc_project::control::BootSide::BootSides;
+                ControlBootSides side = ControlBootSides::Temp;
+                restoreBootSide(flashId, side);
+                activations.find(id)->second->bootSide(side);
+            }
+
 #ifdef BMC_STATIC_DUAL_IMAGE
             uint8_t priority;
             if ((functional && (runningImageSlot == 0)) ||
@@ -481,6 +492,26 @@ void ItemUpdater::processBMCImage()
         catch (const std::exception& e)
         {
             error("Exception during processing: {ERROR}", "ERROR", e);
+        }
+    }
+
+    // Sync CurrentBootSide from the running (functional)
+    // image's BootSide property.
+    for (const auto& ver : versions)
+    {
+        if (ver.second->isFunctional())
+        {
+            auto it = activations.find(ver.first);
+            if (it != activations.end())
+            {
+                // Convert control::BootSide::BootSides to
+                // server::BootSide::BootSides via underlying integer value.
+                // Both enums share identical enumerators (Temp, Perm).
+                server::BootSide::currentBootSide(
+                    static_cast<server::BootSide::BootSides>(
+                        static_cast<int>(it->second->bootSide())));
+            }
+            break;
         }
     }
 
@@ -710,6 +741,97 @@ bool ItemUpdater::fieldModeEnabled(bool value)
     }
 
     return control::FieldMode::fieldModeEnabled();
+}
+
+void ItemUpdater::restoreNextBootSide()
+{
+    using BootSides =
+        sdbusplus::server::xyz::openbmc_project::software::BootSide::BootSides;
+
+    // Default value if NextBootSide is not persisted
+    BootSides side = BootSides::Temp;
+
+    // Read NextBootSide value from persist dir, overwrite if not found
+    phosphor::software::updater::restoreNextBootSide(side);
+
+    server::BootSide::nextBootSide(side);
+}
+
+BootSides ItemUpdater::nextBootSide(BootSides value)
+{
+    using Redundancy =
+        sdbusplus::client::xyz::openbmc_project::state::bmc::Redundancy<>;
+
+    // Can only modify NextBootSide on active bmc
+    std::string role{};
+    try
+    {
+        auto method =
+            bus.new_method_call("xyz.openbmc_project.State.BMC.Redundancy",
+                                "/xyz/openbmc_project/state/bmc0",
+                                "org.freedesktop.DBus.Properties", "Get");
+        method.append(std::string{Redundancy::interface}, std::string{"Role"});
+        auto reply = bus.call(method);
+        std::variant<std::string> roleVariant;
+        reply.read(roleVariant);
+        role = std::get<std::string>(roleVariant);
+    }
+    catch (const sdbusplus::exception_t&)
+    {
+        // Redundancy service not present — single BMC system, allow write
+        info("Redundancy service not found, skipping role check");
+    }
+
+    if (!role.empty() &&
+        Redundancy::convertRoleFromString(role) != Redundancy::Role::Active)
+    {
+        throw sdbusplus::exception::SdBusError(
+            EPERM, "NextBootSide can only be set on the active BMC");
+    }
+
+    storeNextBootSide(value);
+    auto result = server::BootSide::nextBootSide(value);
+
+    // Sync image priorities to match the new NextBootSide.
+    // The image whose BootSide matches value gets priority 0.
+    auto targetSide = static_cast<ControlBootSides>(static_cast<int>(value));
+    for (const auto& act : activations)
+    {
+        if (act.second->redundancyPriority &&
+            act.second->bootSide() == targetSide)
+        {
+            // Skip the priority sync if this image is already at priority 0.
+            if (act.second->redundancyPriority->priority() != 0)
+            {
+                act.second->redundancyPriority->sdbusPriority(0);
+                savePriority(act.first, 0);
+                freePriority(0, act.first);
+            }
+            break;
+        }
+    }
+
+    return result;
+}
+
+void ItemUpdater::setPermBootSide()
+{
+    for (const auto& ver : versions)
+    {
+        if (ver.second->isFunctional())
+        {
+            auto it = activations.find(ver.first);
+            if (it != activations.end())
+            {
+                it->second->bootSide(ControlBootSides::Perm);
+                storeBootSide(ver.second->path(), ControlBootSides::Perm);
+                server::BootSide::currentBootSide(
+                    static_cast<server::BootSide::BootSides>(
+                        static_cast<int>(ControlBootSides::Perm)));
+            }
+            break;
+        }
+    }
 }
 
 void ItemUpdater::restoreFieldModeStatus()
