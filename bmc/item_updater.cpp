@@ -410,6 +410,10 @@ void ItemUpdater::processBMCImage()
                 ControlBootSides side = functional ? ControlBootSides::Temp
                                                    : ControlBootSides::Perm;
                 restoreBootSide(flashId, side);
+                info("BootSide for version {ID} set to {SIDE}", "ID", id,
+                     "SIDE",
+                     sdbusplus::server::xyz::openbmc_project::control::
+                         BootSide::convertBootSidesToString(side));
                 activations.find(id)->second->bootSide(side);
             }
 

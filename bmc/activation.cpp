@@ -315,6 +315,7 @@ void Activation::onFlashWriteSuccess()
     storePurpose(flashId, parent.versions.find(versionId)->second->purpose());
 
     // New image will have BootSide Temp
+    info("Setting BootSide to Temp for new image {ID}", "ID", versionId);
     storeBootSide(flashId, ControlBootSides::Temp);
 
     // Move tarball backup to flash bank
