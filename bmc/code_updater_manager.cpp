@@ -22,36 +22,31 @@ using Paths = std::vector<std::string>;
 bool CodeUpdateManager::copyImage()
 {
     std::error_code ec;
-    fs::path dir(sourceImagePath);
-    fs::create_directories(dir, ec);
 
-    for (const auto& p : std::filesystem::directory_iterator(dir))
+    if (sourceImagePath.extension() != ".tar")
     {
-        if (p.path().extension() == ".tar")
-        {
-            fs::path dstPath{IMG_UPLOAD_DIR / p.path().filename()};
-            if (fs::exists(dstPath, ec))
-            {
-                lg2::info(
-                    "{DSTPATH} already exists in the /tmp/images directory, exit the upgrade",
-                    "DSTPATH", p.path().filename());
+        lg2::error("{PATH} is not a .tar image file", "PATH", sourceImagePath);
+        return false;
+    }
 
-                break;
-            }
+    fs::path dstPath{IMG_UPLOAD_DIR / sourceImagePath.filename()};
+    if (fs::exists(dstPath, ec))
+    {
+        lg2::info(
+            "{DSTPATH} already exists in the /tmp/images directory, exit the upgrade",
+            "DSTPATH", sourceImagePath.filename());
+        return false;
+    }
 
-            try
-            {
-                imageDstPath = dstPath;
-                return fs::copy_file(fs::absolute(p.path()), dstPath);
-            }
-            catch (const std::exception& e)
-            {
-                lg2::error("Error when copying {SRC} to /tmp/images: {ERROR}",
-                           "SRC", p.path(), "ERROR", e.what());
-            }
-
-            break;
-        }
+    try
+    {
+        imageDstPath = dstPath;
+        return fs::copy_file(fs::absolute(sourceImagePath), dstPath);
+    }
+    catch (const std::exception& e)
+    {
+        lg2::error("Error when copying {SRC} to /tmp/images: {ERROR}", "SRC",
+                   sourceImagePath, "ERROR", e.what());
     }
 
     return false;

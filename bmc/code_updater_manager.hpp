@@ -73,8 +73,7 @@ class CodeUpdateManager
         isCLICodeUpdate = true;
     }
 
-    /** @brief Find the first file with a .tar extension according to the CLI
-     *         file path.
+    /** @brief Copy the .tar image given on the CLI to IMG_UPLOAD_DIR.
      *
      *  @return Success or Fail
      */
@@ -112,8 +111,7 @@ class CodeUpdateManager
 
 #endif /* START_UPDATE_DBUS_INTEFACE */
 
-    /** @brief Find the first file with a .tar extension according to the CLI
-     *         file path and copy to IMG_UPLOAD_DIR
+    /** @brief Copy the .tar image file given on the CLI to IMG_UPLOAD_DIR
      *
      *  @return Success or Fail
      */
