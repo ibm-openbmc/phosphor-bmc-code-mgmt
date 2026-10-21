@@ -24,6 +24,7 @@ const std::string priorityName = "priority";
 const std::string purposeName = "purpose";
 const std::string tarballBackupName = "tarball_backup";
 const std::string tarballFileName = "tarball_backup.tar";
+constexpr auto bootSideName = "bootSide";
 
 const auto initialBackupPath = fs::path(PERSIST_DIR) / tarballBackupName;
 
@@ -76,6 +77,54 @@ void createTarballBackup(bool deleteInitialBackup, const std::string& flashId,
     {
         error("Error while copying file: {ERROR}", "ERROR", e);
     }
+}
+
+void storeBootSide(const std::string& flashId, ControlBootSides side)
+{
+    std::error_code ec;
+    auto path = fs::path(PERSIST_DIR) / flashId;
+    if (!fs::is_directory(path, ec))
+    {
+        if (fs::exists(path, ec))
+        {
+            warning("Removing non-directory file: {PATH}", "PATH", path);
+            fs::remove_all(path, ec);
+        }
+        fs::create_directories(path, ec);
+    }
+    path = path / bootSideName;
+
+    std::ofstream os(path.c_str());
+    cereal::JSONOutputArchive oarchive(os);
+    oarchive(cereal::make_nvp(bootSideName,
+                              sdbusplus::server::xyz::openbmc_project::control::
+                                  BootSide::convertBootSidesToString(side)));
+}
+
+void restoreBootSide(const std::string& flashId, ControlBootSides& side)
+{
+    std::error_code ec;
+    auto path = fs::path(PERSIST_DIR) / flashId / bootSideName;
+    if (fs::exists(path, ec))
+    {
+        std::ifstream is(path.c_str(), std::ios::in);
+        try
+        {
+            std::string sideStr;
+            cereal::JSONInputArchive iarchive(is);
+            iarchive(cereal::make_nvp(bootSideName, sideStr));
+            side = sdbusplus::server::xyz::openbmc_project::control::BootSide::
+                convertBootSidesFromString(sideStr);
+            return;
+        }
+        catch (const cereal::Exception& e)
+        {
+            fs::remove_all(path, ec);
+        }
+    }
+    // No persisted value found — write the default so subsequent boots
+    // find a valid file under the correct flashId directory.
+    storeBootSide(flashId, side);
 }
 
 void storePriority(const std::string& flashId, uint8_t priority)

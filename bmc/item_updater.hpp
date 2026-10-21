@@ -12,7 +12,9 @@
 #include <sdbusplus/server.hpp>
 #include <xyz/openbmc_project/Association/Definitions/server.hpp>
 #include <xyz/openbmc_project/Common/FactoryReset/server.hpp>
+#include <xyz/openbmc_project/Control/BootSide/server.hpp>
 #include <xyz/openbmc_project/Control/FieldMode/server.hpp>
+#include <xyz/openbmc_project/Software/BootSide/server.hpp>
 #include <xyz/openbmc_project/Software/MinimumVersion/server.hpp>
 
 #include <string>
@@ -33,6 +35,7 @@ using ActivationIntf =
     sdbusplus::xyz::openbmc_project::Software::server::Activation;
 using ItemUpdaterInherit = sdbusplus::server::object_t<
     sdbusplus::server::xyz::openbmc_project::common::FactoryReset,
+    sdbusplus::server::xyz::openbmc_project::software::BootSide,
     sdbusplus::server::xyz::openbmc_project::control::FieldMode,
     sdbusplus::server::xyz::openbmc_project::association::Definitions,
     sdbusplus::server::xyz::openbmc_project::collection::DeleteAll>;
@@ -119,6 +122,7 @@ class ItemUpdater : public ItemUpdaterInherit
         if (type == UpdaterType::BMC || type == UpdaterType::ALL)
         {
             processBMCImage();
+            syncNextBootSideWithCurrentBootSide();
         }
         if (type == UpdaterType::BIOS || type == UpdaterType::ALL)
         {
@@ -281,8 +285,18 @@ class ItemUpdater : public ItemUpdaterInherit
      *
      * @return true if another image is being activated, false if otherwise
      */
-
     bool activationInProgress();
+
+    /**
+     * @brief Sets BootSide on the functional Activation object to Perm,
+     * persists it, and updates CurrentBootSide to match.
+     */
+    void setPermBootSide();
+
+    /** @brief Sets NextBootSide and updates image priorities so the image
+     * matching NextBootSide boots next.
+     */
+    BootSides nextBootSide(BootSides value) override;
 
     /** @brief Persistent map of Version D-Bus objects and their
      * version id */
@@ -342,6 +356,9 @@ class ItemUpdater : public ItemUpdaterInherit
 
     /** @brief Restores field mode status on reboot. */
     void restoreFieldModeStatus();
+
+    /** @brief Syncs NextBootSide to CurrentBootSide on boot. */
+    void syncNextBootSideWithCurrentBootSide();
 
     /** @brief Creates a functional association to the
      *  "running" BMC software image

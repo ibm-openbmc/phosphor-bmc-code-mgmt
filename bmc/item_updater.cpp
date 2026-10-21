@@ -13,7 +13,9 @@
 #include <phosphor-logging/lg2.hpp>
 #include <xyz/openbmc_project/Common/error.hpp>
 #include <xyz/openbmc_project/Software/Image/error.hpp>
+#include <xyz/openbmc_project/State/BMC/Redundancy/client.hpp>
 
+#include <cerrno>
 #include <filesystem>
 #include <fstream>
 #include <queue>
@@ -400,6 +402,21 @@ void ItemUpdater::processBMCImage()
                 id, std::make_unique<Activation>(
                         ctx, path, *this, id, activationState, associations)));
 
+            // Restore bootSide for this activation from persist dir.
+            // Default: functional=Temp, non-functional=Perm.
+            {
+                using ControlBootSides = sdbusplus::server::xyz::
+                    openbmc_project::control::BootSide::BootSides;
+                ControlBootSides side = functional ? ControlBootSides::Temp
+                                                   : ControlBootSides::Perm;
+                restoreBootSide(flashId, side);
+                info("BootSide for version {ID} set to {SIDE}", "ID", id,
+                     "SIDE",
+                     sdbusplus::server::xyz::openbmc_project::control::
+                         BootSide::convertBootSidesToString(side));
+                activations.find(id)->second->bootSide(side);
+            }
+
 #ifdef BMC_STATIC_DUAL_IMAGE
             uint8_t priority;
             if ((functional && (runningImageSlot == 0)) ||
@@ -710,6 +727,63 @@ bool ItemUpdater::fieldModeEnabled(bool value)
     }
 
     return control::FieldMode::fieldModeEnabled();
+}
+
+void ItemUpdater::syncNextBootSideWithCurrentBootSide()
+{
+    using SoftwareBootSides =
+        sdbusplus::server::xyz::openbmc_project::software::BootSide::BootSides;
+    auto current =
+        static_cast<SoftwareBootSides>(static_cast<int>(currentBootSide()));
+    info("Syncing NextBootSide to CurrentBootSide ({SIDE}) on boot", "SIDE",
+         server::BootSide::convertBootSidesToString(current));
+    server::BootSide::nextBootSide(current);
+}
+
+BootSides ItemUpdater::nextBootSide(BootSides value)
+{
+    info("Setting NextBootSide from {OLD} to {NEW}", "OLD",
+         server::BootSide::convertBootSidesToString(
+             server::BootSide::nextBootSide()),
+         "NEW", server::BootSide::convertBootSidesToString(value));
+    auto result = server::BootSide::nextBootSide(value);
+
+    // Sync image priorities to match the new NextBootSide.
+    // The image whose BootSide matches value gets priority 0.
+    auto targetSide = static_cast<ControlBootSides>(static_cast<int>(value));
+    for (const auto& act : activations)
+    {
+        if (act.second->redundancyPriority &&
+            act.second->bootSide() == targetSide)
+        {
+            // Skip the priority sync if this image is already at priority 0.
+            if (act.second->redundancyPriority->priority() != 0)
+            {
+                act.second->redundancyPriority->priority(0);
+            }
+            break;
+        }
+    }
+
+    return result;
+}
+
+void ItemUpdater::setPermBootSide()
+{
+    for (const auto& ver : versions)
+    {
+        if (ver.second->isFunctional())
+        {
+            auto it = activations.find(ver.first);
+            if (it != activations.end())
+            {
+                info("Setting BootSide to Perm for version {ID}", "ID",
+                     ver.first);
+                it->second->bootSide(ControlBootSides::Perm);
+            }
+            break;
+        }
+    }
 }
 
 void ItemUpdater::restoreFieldModeStatus()

@@ -240,6 +240,11 @@ auto Activation::activation(Activations value) -> Activations
 
         parent.freeSpace(*this);
 
+        // Set running image as Perm before writing the new image.
+        // BootSide of the functional activation becomes Perm, and
+        // CurrentBootSide is updated immediately.
+        parent.setPermBootSide();
+
         // Enable systemd signals
         Activation::subscribeToSystemdSignals();
 
@@ -268,6 +273,32 @@ auto Activation::activation(Activations value) -> Activations
     return softwareServer::Activation::activation(value);
 }
 
+auto Activation::bootSide(ControlBootSides value) -> ControlBootSides
+{
+    auto it = parent.versions.find(versionId);
+    if (it != parent.versions.end())
+    {
+        storeBootSide(it->second->path(), value);
+    }
+
+    auto result = ActivationInherit::bootSide(value);
+
+    if (it != parent.versions.end() && it->second->isFunctional())
+    {
+        using SoftwareBootSides = sdbusplus::server::xyz::openbmc_project::
+            software::BootSide::BootSides;
+        auto currentSide =
+            static_cast<SoftwareBootSides>(static_cast<int>(value));
+        info("CurrentBootSide set to {SIDE} from version {ID}", "SIDE",
+             sdbusplus::server::xyz::openbmc_project::software::BootSide::
+                 convertBootSidesToString(currentSide),
+             "ID", versionId);
+        parent.currentBootSide(currentSide);
+    }
+
+    return result;
+}
+
 void Activation::onFlashWriteSuccess()
 {
     activationProgress->progress(100);
@@ -282,6 +313,10 @@ void Activation::onFlashWriteSuccess()
 
     auto flashId = parent.versions.find(versionId)->second->path();
     storePurpose(flashId, parent.versions.find(versionId)->second->purpose());
+
+    // New image will have BootSide Temp
+    info("Setting BootSide to Temp for new image {ID}", "ID", versionId);
+    storeBootSide(flashId, ControlBootSides::Temp);
 
     // Move tarball backup to flash bank
     createTarballBackup(true, flashId);
@@ -407,6 +442,7 @@ uint8_t RedundancyPriority::priority(uint8_t value)
     auto newPriority = softwareServer::RedundancyPriority::priority(value);
     parent.parent.savePriority(parent.versionId, value);
     parent.parent.freePriority(value, parent.versionId);
+
     return newPriority;
 }
 
