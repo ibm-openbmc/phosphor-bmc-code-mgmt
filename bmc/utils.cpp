@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <phosphor-logging/lg2.hpp>
+#include <xyz/openbmc_project/Dump/Create/common.hpp>
 
 namespace utils
 {
@@ -96,14 +97,26 @@ void mergeFiles(const std::vector<std::string>& srcFiles,
     outFile.close();
 }
 
-void createBmcDump(sdbusplus::bus::bus& bus)
+void createBmcDump(sdbusplus::bus::bus& bus,
+                   const sdbusplus::object_path& objectPath)
 {
+    using DumpIntr = sdbusplus::common::xyz::openbmc_project::dump::Create;
+    using CreateParameters = DumpIntr::CreateParameters;
+
     auto method = bus.new_method_call(
         "xyz.openbmc_project.Dump.Manager", "/xyz/openbmc_project/dump/bmc",
         "xyz.openbmc_project.Dump.Create", "CreateDump");
-    method.append(
-        std::vector<
-            std::pair<std::string, std::variant<std::string, uint64_t>>>());
+
+    // Pass the log entry object path as EventId
+    std::vector<std::pair<std::string, std::variant<std::string, uint64_t>>>
+        params;
+    if (!objectPath.str.empty())
+    {
+        params.emplace_back(DumpIntr::convertCreateParametersToString(
+                                CreateParameters::EventId),
+                            objectPath.str);
+    }
+    method.append(params);
     try
     {
         bus.call_noreply(method);
