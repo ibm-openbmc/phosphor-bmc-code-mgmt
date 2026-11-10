@@ -588,7 +588,8 @@ function mmc_update() {
     sgdisk --change-name="${number}":rofs-"${label}" /dev/mmcblk0 1>/dev/null
 
     # Run this after sgdisk for labels to take effect.
-    partprobe
+    # Explicitly target mmcblk0 to avoid errors from other block devices
+    partprobe /dev/mmcblk0
 
     # Update hostfw. The remove function doesn't touch the hostfw image, so
     # need to unmount and delete it prior to updating it.
